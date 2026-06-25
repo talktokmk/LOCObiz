@@ -3,8 +3,8 @@ import SearchBar from '@/components/SearchBar'
 import BusinessCard from '@/components/BusinessCard'
 
 export const metadata = {
-  title: 'Search Local Businesses',
-  description: 'Search for local businesses, services, and shops across India.',
+  title: 'Search Local Businesses | LOCObiz',
+  description: 'Search for local businesses, services, and shops across India. Connect instantly via WhatsApp.',
 }
 
 export default async function SearchPage({
@@ -17,7 +17,7 @@ export default async function SearchPage({
   const city = sp.city || ''
   const category = sp.category || ''
 
-  let sql = 'SELECT * FROM businesses WHERE 1=1'
+  let sql = 'SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, verified, featured FROM businesses WHERE 1=1'
   const args: (string | number)[] = []
 
   if (query) {
@@ -49,9 +49,9 @@ export default async function SearchPage({
 
   return (
     <div>
-      <section className="bg-gradient-to-br from-brand-600 to-brand-800 text-white py-12">
+      <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4">Search Local Businesses</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">Find Local Businesses</h1>
           <SearchBar initialQuery={query} initialCity={city} />
         </div>
       </section>
@@ -63,11 +63,12 @@ export default async function SearchPage({
           </h2>
           {businesses.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-surface-500">No businesses found. Try a different search.</p>
+              <p className="text-surface-500 mb-2">No businesses found.</p>
+              <p className="text-sm text-surface-400">Try a different search term or browse by city.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {businesses.map((biz) => (
+              {businesses.map((biz, i) => (
                 <BusinessCard
                   key={biz.slug}
                   slug={biz.slug}
@@ -75,13 +76,12 @@ export default async function SearchPage({
                   category={biz.category_slug}
                   city={biz.city}
                   area={biz.area}
-                  district={biz.district}
-                  state={biz.state}
                   rating={biz.rating}
                   reviewsCount={biz.reviews_count}
                   phone={biz.phone}
                   verified={Boolean(biz.verified)}
                   featured={Boolean(biz.featured)}
+                  rank={i + 1}
                 />
               ))}
             </div>

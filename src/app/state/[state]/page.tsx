@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ state: st
   const st = getStateBySlug(state)
   if (!st) return { title: 'State Not Found' }
   return {
-    title: `Businesses in ${st.name}`,
-    description: `Find local businesses, services, and shops across all districts of ${st.name}. Browse restaurants, salons, doctors and more in ${st.name}.`,
+    title: `Businesses in ${st.name} | LOCObiz`,
+    description: `Find local businesses, services, and shops across all districts of ${st.name}. Connect instantly via WhatsApp.`,
   }
 }
 
@@ -33,13 +33,13 @@ export default async function StatePage({ params }: { params: Promise<{ state: s
 
   return (
     <div>
-      <section className="bg-gradient-to-br from-brand-600 to-brand-800 text-white py-12">
+      <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="inline-flex items-center gap-1 text-brand-200 hover:text-white text-sm mb-4">
+          <Link href="/" className="inline-flex items-center gap-1 text-surface-400 hover:text-white text-sm mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Home
           </Link>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{st.name}</h1>
-          <p className="text-brand-100">
+          <p className="text-surface-300">
             {total} businesses across {districts.length} districts
           </p>
         </div>
@@ -52,11 +52,11 @@ export default async function StatePage({ params }: { params: Promise<{ state: s
               <Link
                 key={d.district}
                 href={`/state/${state}/${d.district.toLowerCase().replace(/\s+/g, '-')}`}
-                className="bg-white rounded-xl border border-surface-200 p-5 hover:shadow-lg hover:border-brand-300 transition-all"
+                className="bg-white rounded-xl border border-surface-200 p-5 hover:shadow-lg hover:border-whatsapp/30 transition-all"
               >
-                <Building2 className="w-8 h-8 text-brand-600 mb-3" />
+                <Building2 className="w-8 h-8 text-whatsapp mb-3" />
                 <h3 className="font-semibold text-surface-900">{d.district}</h3>
-                <p className="text-sm text-surface-500 mt-1">District</p>
+                <p className="text-sm text-surface-500 mt-1">Browse businesses</p>
               </Link>
             ))}
           </div>

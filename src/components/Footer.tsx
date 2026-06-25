@@ -1,38 +1,46 @@
 import Link from 'next/link'
+import { db } from '@/lib/db'
 
-export default function Footer() {
+export default async function Footer() {
+  let cities: { city: string }[] = []
+  let categories: { category_slug: string }[] = []
+  try {
+    const citiesRes = await db.execute('SELECT DISTINCT city FROM businesses WHERE city IS NOT NULL ORDER BY city LIMIT 10')
+    cities = citiesRes.rows as unknown as { city: string }[]
+    const catRes = await db.execute('SELECT DISTINCT category_slug FROM businesses WHERE category_slug IS NOT NULL ORDER BY category_slug LIMIT 10')
+    categories = catRes.rows as unknown as { category_slug: string }[]
+  } catch {}
+
   return (
-    <footer className="bg-surface-800 text-surface-300">
+    <footer className="bg-surface-900 text-surface-300 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-white font-bold text-lg mb-4">LOCObiz</h3>
-            <p className="text-sm">Find the best local businesses near you. India's local business directory.</p>
+            <h3 className="font-bold text-white mb-3">LOCObiz</h3>
+            <p className="text-sm">Find trusted local businesses in your city. Connect instantly via WhatsApp.</p>
           </div>
           <div>
-            <h4 className="text-white font-semibold mb-3">Explore</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/search" className="hover:text-white transition-colors">Browse Businesses</Link></li>
-              <li><Link href="/claim" className="hover:text-white transition-colors">Claim Your Business</Link></li>
-              <li><Link href="/premium" className="hover:text-white transition-colors">Premium Listings</Link></li>
+            <h3 className="font-semibold text-white mb-3">Popular Cities</h3>
+            <ul className="space-y-1.5 text-sm">
+              {cities.map((c) => (
+                <li key={c.city}>
+                  <Link href={`/city/${c.city.toLowerCase()}`} className="hover:text-white transition-colors">
+                    {c.city}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-semibold mb-3">States</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/state/maharashtra" className="hover:text-white transition-colors">Maharashtra</Link></li>
-              <li><Link href="/state/karnataka" className="hover:text-white transition-colors">Karnataka</Link></li>
-              <li><Link href="/state/tamil-nadu" className="hover:text-white transition-colors">Tamil Nadu</Link></li>
-              <li><Link href="/state/delhi" className="hover:text-white transition-colors">Delhi</Link></li>
-              <li><Link href="/state/uttar-pradesh" className="hover:text-white transition-colors">Uttar Pradesh</Link></li>
-              <li><Link href="/state/gujarat" className="hover:text-white transition-colors">Gujarat</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">Company</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><a href="mailto:hello@locobiz.in" className="hover:text-white transition-colors">Contact</a></li>
+            <h3 className="font-semibold text-white mb-3">Categories</h3>
+            <ul className="space-y-1.5 text-sm">
+              {categories.map((c) => (
+                <li key={c.category_slug}>
+                  <Link href={`/search?category=${c.category_slug}`} className="hover:text-white transition-colors capitalize">
+                    {c.category_slug.replace(/-/g, ' ')}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
