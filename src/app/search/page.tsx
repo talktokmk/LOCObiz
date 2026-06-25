@@ -1,10 +1,11 @@
 import { db } from '@/lib/db'
 import SearchBar from '@/components/SearchBar'
 import BusinessCard from '@/components/BusinessCard'
+import { Zap } from 'lucide-react'
 
 export const metadata = {
-  title: 'Search Local Businesses | LOCObiz',
-  description: 'Search for local businesses, services, and shops across India. Connect instantly via WhatsApp.',
+  title: 'Search Local Businesses | Connect on WhatsApp',
+  description: 'Find local businesses ready to connect on WhatsApp. Search services, compare top-rated, and chat instantly.',
 }
 
 export default async function SearchPage({
@@ -42,7 +43,7 @@ export default async function SearchPage({
     rating: number; reviews_count: number; phone: string; verified: number; featured: number
   }[]
 
-  let searchSummary = 'All Businesses'
+  let searchSummary = 'all services'
   if (query && city) searchSummary = `"${query}" in ${city}`
   else if (query) searchSummary = `"${query}"`
   else if (city) searchSummary = city
@@ -51,20 +52,21 @@ export default async function SearchPage({
     <div>
       <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4">Find Local Businesses</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">Find &amp; Connect</h1>
           <SearchBar initialQuery={query} initialCity={city} />
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-xl font-semibold text-surface-900 mb-6">
+          <div className="flex items-center gap-2 text-sm text-surface-500 mb-6">
+            <Zap className="w-4 h-4 text-whatsapp" />
             {businesses.length} result{businesses.length !== 1 ? 's' : ''} for {searchSummary}
-          </h2>
+          </div>
           {businesses.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-surface-500 mb-2">No businesses found.</p>
-              <p className="text-sm text-surface-400">Try a different search term or browse by city.</p>
+              <p className="text-surface-500 mb-2">No businesses found for this search.</p>
+              <p className="text-sm text-surface-400">Try a different search term or browse by city above.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

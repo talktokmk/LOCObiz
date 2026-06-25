@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import { Star, MapPin, Phone, Globe, Clock, CheckCircle, MessageCircle, ChevronRight, TrendingUp, Shield, Zap } from 'lucide-react'
+import { Star, MapPin, Phone, Globe, Clock, CheckCircle, MessageCircle, ChevronRight, TrendingUp, Shield, Zap, HelpCircle } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -12,6 +12,39 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${biz.name} - ${biz.area}, ${biz.city}`,
     description: biz.description?.slice(0, 160) || `${biz.name} in ${biz.area}, ${biz.city}. Contact via WhatsApp for quick response.`,
   }
+}
+
+const faqs: Record<string, { q: string; a: string }[]> = {
+  'plumber': [
+    { q: 'Do you handle emergency plumbing?', a: 'Contact the business directly on WhatsApp to check for emergency availability and response times.' },
+    { q: 'What areas do you serve?', a: 'The business serves the listed city and surrounding areas. Chat on WhatsApp to confirm service availability in your location.' },
+  ],
+  'electrician': [
+    { q: 'Do you offer emergency electrical services?', a: 'Contact the business on WhatsApp to check for emergency service availability and current response times.' },
+    { q: 'Are you licensed and insured?', a: 'Chat directly with the business on WhatsApp to verify their credentials and insurance coverage.' },
+  ],
+  'salon': [
+    { q: 'Do I need an appointment?', a: 'It\'s recommended to book in advance. Chat on WhatsApp to check availability and book your slot.' },
+    { q: 'What safety measures do you follow?', a: 'Contact the business on WhatsApp to ask about their hygiene and safety protocols.' },
+  ],
+  'doctor': [
+    { q: 'Do you accept walk-ins?', a: 'Contact the clinic on WhatsApp to check if walk-ins are accepted or if an appointment is needed.' },
+    { q: 'What are your consultation hours?', a: 'Chat on WhatsApp with the clinic to get their exact consultation timings and availability.' },
+  ],
+  'restaurant': [
+    { q: 'Do you offer home delivery?', a: 'Contact the restaurant on WhatsApp to check delivery availability and minimum order requirements.' },
+    { q: 'Do you have vegetarian options?', a: 'Chat on WhatsApp with the restaurant to ask about their menu and dietary options.' },
+  ],
+}
+
+function getFaqs(category: string): { q: string; a: string }[] {
+  const matched = faqs[category.toLowerCase()]
+  if (matched) return matched
+  return [
+    { q: 'Is this service available right now?', a: 'Chat on WhatsApp with the business to check current availability and response times.' },
+    { q: 'Do you serve my area?', a: 'Contact the business directly on WhatsApp to confirm if they serve your specific location.' },
+    { q: 'What are your business hours?', a: 'Chat on WhatsApp to get accurate business hours and the best time to reach them.' },
+  ]
 }
 
 export default async function BusinessPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -36,158 +69,180 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
-    ...(biz.state ? [{ label: biz.state.replace(/-/g, ' '), href: `/state/${biz.state}` }] : []),
-    ...(biz.district ? [{ label: biz.district, href: `/state/${biz.state}/${biz.district.toLowerCase().replace(/\s+/g, '-')}` }] : []),
-    { label: biz.city, href: `/city/${biz.city.toLowerCase()}` },
-    { label: biz.name, href: '#' },
+    ...(biz.city ? [{ label: biz.city, href: `/city/${biz.city.toLowerCase()}` }] : []),
+    ...(biz.category_slug ? [{ label: biz.category_slug.replace(/-/g, ' '), href: `/category/${biz.city.toLowerCase()}/${biz.category_slug}` }] : []),
   ]
+
+  const categoryFaqs = getFaqs(biz.category_slug || '')
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8">
         <nav className="flex items-center gap-1.5 text-sm text-surface-400 mb-6 flex-wrap">
           {breadcrumbs.map((b, i) => (
             <span key={b.label} className="flex items-center gap-1.5">
               {i > 0 && <ChevronRight className="w-3 h-3" />}
               {i < breadcrumbs.length - 1 ? (
                 <Link href={b.href} className="hover:text-surface-600 transition-colors capitalize">{b.label}</Link>
-              ) : (
-                <span className="text-surface-600 truncate max-w-[200px]">{b.label}</span>
-              )}
+              ) : null}
             </span>
           ))}
         </nav>
 
-        <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden animate-fade-in">
+        <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden animate-fade-in mb-4">
           <div className="p-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-bold text-surface-900">{biz.name}</h1>
-                  {Boolean(biz.verified) && (
-                    <span className="flex items-center gap-1 px-2 py-1 bg-brand-100 text-brand-700 text-xs font-medium rounded-full">
-                      <CheckCircle className="w-3.5 h-3.5" /> Verified
-                    </span>
-                  )}
-                  {Boolean(biz.featured) && (
-                    <span className="flex items-center gap-1 px-2 py-1 bg-whatsapp-light text-green-800 text-xs font-medium rounded-full">
-                      <Zap className="w-3.5 h-3.5" /> Featured
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 text-surface-500 flex-wrap text-sm">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{biz.area}, {biz.city}</span>
-                  </div>
-                  {biz.rating && (
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span className="font-medium text-surface-900">{biz.rating}</span>
-                      <span>({biz.reviews_count} reviews)</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <h1 className="text-2xl md:text-3xl font-bold text-surface-900">{biz.name}</h1>
+              {Boolean(biz.verified) && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-brand-100 text-brand-700 text-xs font-medium rounded-full">
+                  <CheckCircle className="w-3.5 h-3.5" /> Verified
+                </span>
+              )}
+              <span className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                <Zap className="w-3.5 h-3.5" /> Fast Response
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-surface-600">
-                  <Phone className="w-4 h-4 text-whatsapp" />
-                  <span>{biz.phone}</span>
-                </div>
-                {biz.email && (
-                  <div className="flex items-center gap-2 text-surface-600">
-                    <Globe className="w-4 h-4 text-whatsapp" />
-                    <span>{biz.email}</span>
-                  </div>
-                )}
-                {biz.website && (
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-whatsapp shrink-0" />
-                    <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline truncate">
-                      {biz.website}
-                    </a>
-                  </div>
-                )}
+            <div className="flex items-center gap-4 text-surface-500 flex-wrap text-sm mb-6">
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>{biz.area}, {biz.city}</span>
               </div>
-              {services.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-surface-900 mb-2 flex items-center gap-1 text-sm">
-                    <Clock className="w-4 h-4 text-whatsapp" /> Services
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {services.map((s: string) => (
-                      <span key={s} className="px-3 py-1 bg-surface-100 text-surface-700 rounded-full text-sm">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
+              {biz.rating && (
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <span className="font-medium text-surface-900">{biz.rating}</span>
+                  <span className="text-surface-400">({biz.reviews_count} reviews)</span>
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="px-6 md:px-8 pb-6 md:pb-8">
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-whatsapp text-white font-bold text-lg rounded-xl hover:bg-whatsapp-dark hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-whatsapp/25 animate-pulse-whatsapp"
+              className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 bg-whatsapp text-white font-bold text-lg rounded-xl hover:bg-whatsapp-dark hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-whatsapp/25 animate-pulse-whatsapp mb-3"
             >
               <MessageCircle className="w-6 h-6" />
-              Chat on WhatsApp
+              Chat on WhatsApp Now
             </a>
-            <p className="text-xs text-surface-400 text-center mt-2">Usually responds within minutes</p>
+            <p className="text-center text-sm text-surface-400 flex items-center justify-center gap-1">
+              <Zap className="w-4 h-4 text-green-500" /> Usually responds within a few minutes
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-4 animate-slide-up">
+          <div className="bg-white rounded-xl border border-surface-200 p-4 text-center">
+            <MessageCircle className="w-6 h-6 text-whatsapp mx-auto mb-1.5" />
+            <h3 className="font-semibold text-xs text-surface-900">Instant Connect</h3>
+            <p className="text-[11px] text-surface-400 mt-0.5">1 tap to chat</p>
+          </div>
+          <div className="bg-white rounded-xl border border-surface-200 p-4 text-center">
+            <Shield className="w-6 h-6 text-whatsapp mx-auto mb-1.5" />
+            <h3 className="font-semibold text-xs text-surface-900">Trusted</h3>
+            <p className="text-[11px] text-surface-400 mt-0.5">Verified contact</p>
+          </div>
+          <div className="bg-white rounded-xl border border-surface-200 p-4 text-center">
+            <TrendingUp className="w-6 h-6 text-whatsapp mx-auto mb-1.5" />
+            <h3 className="font-semibold text-xs text-surface-900">Top Rated</h3>
+            <p className="text-[11px] text-surface-400 mt-0.5">{biz.rating} stars</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mb-4 animate-slide-up">
+          <div className="grid grid-cols-1 gap-3 text-sm">
+            <div className="flex items-center gap-3 text-surface-600">
+              <Phone className="w-4 h-4 text-whatsapp shrink-0" />
+              <span>{biz.phone}</span>
+            </div>
+            <div className="flex items-center gap-3 text-surface-600">
+              <MapPin className="w-4 h-4 text-whatsapp shrink-0" />
+              <span>{biz.address || `${biz.area}, ${biz.city}`}</span>
+            </div>
+            {biz.website && (
+              <div className="flex items-center gap-3">
+                <Globe className="w-4 h-4 text-whatsapp shrink-0" />
+                <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline truncate">
+                  {biz.website}
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
         {biz.description && (
-          <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mt-6 animate-slide-up">
-            <h2 className="text-lg font-semibold text-surface-900 mb-3">About</h2>
+          <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mb-4 animate-slide-up">
+            <h2 className="text-lg font-semibold text-surface-900 mb-3">About {biz.name}</h2>
             <p className="text-surface-600 leading-relaxed">{biz.description}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 animate-slide-up">
-          <div className="bg-white rounded-xl border border-surface-200 p-5 text-center">
-            <Shield className="w-8 h-8 text-whatsapp mx-auto mb-2" />
-            <h3 className="font-semibold text-sm text-surface-900">Trusted Business</h3>
-            <p className="text-xs text-surface-500 mt-1">Verified listing with real contact info</p>
+        {services.length > 0 && (
+          <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mb-4 animate-slide-up">
+            <h2 className="text-lg font-semibold text-surface-900 mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-whatsapp" /> Services Offered
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {services.map((s: string) => (
+                <span key={s} className="px-3 py-1.5 bg-surface-100 text-surface-700 rounded-lg text-sm">
+                  {s}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-surface-200 p-5 text-center">
-            <MessageCircle className="w-8 h-8 text-whatsapp mx-auto mb-2" />
-            <h3 className="font-semibold text-sm text-surface-900">Instant Connect</h3>
-            <p className="text-xs text-surface-500 mt-1">Chat directly on WhatsApp with one tap</p>
+        )}
+
+        <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mb-4 animate-slide-up">
+          <h2 className="text-lg font-semibold text-surface-900 mb-4 flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-whatsapp" /> Quick Questions
+          </h2>
+          <div className="space-y-3">
+            {categoryFaqs.map((faq, i) => (
+              <details key={i} className="group bg-surface-50 rounded-xl overflow-hidden">
+                <summary className="flex items-center justify-between px-4 py-3 text-sm font-medium text-surface-900 cursor-pointer hover:bg-surface-100 transition-colors">
+                  {faq.q}
+                  <ChevronRight className="w-4 h-4 text-surface-400 group-open:rotate-90 transition-transform" />
+                </summary>
+                <div className="px-4 pb-3 text-sm text-surface-600">
+                  {faq.a}
+                </div>
+              </details>
+            ))}
           </div>
-          <div className="bg-white rounded-xl border border-surface-200 p-5 text-center">
-            <TrendingUp className="w-8 h-8 text-whatsapp mx-auto mb-2" />
-            <h3 className="font-semibold text-sm text-surface-900">Top Rated</h3>
-            <p className="text-xs text-surface-500 mt-1">{biz.rating} stars from {biz.reviews_count} reviews</p>
+          <div className="mt-4 text-center">
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-whatsapp-dark font-semibold text-sm hover:underline"
+            >
+              <MessageCircle className="w-4 h-4" /> Ask more questions on WhatsApp
+            </a>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mt-6">
-          <h2 className="text-lg font-semibold text-surface-900 mb-3">Owner of this business?</h2>
-          <p className="text-surface-500 text-sm mb-4">
-            Claim your listing to update information, respond to reviews, and get more visibility.
-          </p>
-          <Link
-            href={`/claim?slug=${biz.slug}`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-surface-900 text-white font-semibold rounded-xl hover:bg-surface-800 transition-colors"
+        <div className="bg-gradient-to-br from-whatsapp/10 to-whatsapp/5 rounded-2xl border border-whatsapp/20 p-6 md:p-8 text-center">
+          <h2 className="text-xl font-bold text-surface-900 mb-2">Need help right now?</h2>
+          <p className="text-surface-600 mb-5">Chat directly with {biz.name} on WhatsApp — get a response in minutes.</p>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 px-8 py-4 bg-whatsapp text-white font-bold text-base rounded-xl hover:bg-whatsapp-dark transition-all shadow-lg shadow-whatsapp/25"
           >
-            Claim This Listing
-          </Link>
+            <MessageCircle className="w-5 h-5" />
+            Chat on WhatsApp Now
+          </a>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-surface-200 p-3 md:hidden z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-surface-200 p-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
         <a
           href={waUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-whatsapp text-white font-bold rounded-xl hover:bg-whatsapp-dark transition-colors shadow-lg"
+          className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 bg-whatsapp text-white font-bold text-base rounded-xl hover:bg-whatsapp-dark transition-all shadow-lg shadow-whatsapp/30 animate-pulse-whatsapp"
         >
           <MessageCircle className="w-5 h-5" />
           Chat on WhatsApp

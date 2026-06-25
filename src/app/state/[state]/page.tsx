@@ -2,15 +2,15 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getStateBySlug } from '@/lib/states'
-import { ArrowLeft, Building2 } from 'lucide-react'
+import { ArrowRight, ChevronRight, MessageCircle, MapPin } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ state: string }> }) {
   const { state } = await params
   const st = getStateBySlug(state)
   if (!st) return { title: 'State Not Found' }
   return {
-    title: `Businesses in ${st.name} | LOCObiz`,
-    description: `Find local businesses, services, and shops across all districts of ${st.name}. Connect instantly via WhatsApp.`,
+    title: `Find Services in ${st.name} | Connect on WhatsApp`,
+    description: `Find trusted local services across ${st.name}. Connect with plumbers, electricians, salons, doctors and more via WhatsApp.`,
   }
 }
 
@@ -35,30 +35,55 @@ export default async function StatePage({ params }: { params: Promise<{ state: s
     <div>
       <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="inline-flex items-center gap-1 text-surface-400 hover:text-white text-sm mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Home
-          </Link>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{st.name}</h1>
+          <div className="flex items-center gap-2 text-sm text-surface-400 mb-4">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-white">{st.name}</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Services in {st.name}</h1>
           <p className="text-surface-300">
-            {total} businesses across {districts.length} districts
+            {total} trusted services across {districts.length} districts — connect on WhatsApp.
           </p>
         </div>
       </section>
 
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <h2 className="text-lg font-semibold text-surface-900 mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-whatsapp" /> Select your district in {st.name}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {districts.map((d) => (
               <Link
                 key={d.district}
                 href={`/state/${state}/${d.district.toLowerCase().replace(/\s+/g, '-')}`}
-                className="bg-white rounded-xl border border-surface-200 p-5 hover:shadow-lg hover:border-whatsapp/30 transition-all"
+                className="group flex items-center justify-between p-4 bg-white border border-surface-200 rounded-xl hover:border-whatsapp/30 hover:shadow-md transition-all"
               >
-                <Building2 className="w-8 h-8 text-whatsapp mb-3" />
-                <h3 className="font-semibold text-surface-900">{d.district}</h3>
-                <p className="text-sm text-surface-500 mt-1">Browse businesses</p>
+                <div>
+                  <h3 className="font-medium text-surface-900 group-hover:text-whatsapp-dark transition-colors">{d.district}</h3>
+                  <p className="text-xs text-surface-400">Find services</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-surface-300 group-hover:text-whatsapp transition-colors" />
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-whatsapp/10 to-whatsapp/5 rounded-2xl border border-whatsapp/20 p-8 text-center">
+            <MessageCircle className="w-10 h-10 text-whatsapp mx-auto mb-3" />
+            <h2 className="text-xl font-bold text-surface-900 mb-2">Own a business in {st.name}?</h2>
+            <p className="text-surface-500 text-sm mb-5">Get leads directly on WhatsApp.</p>
+            <a
+              href={`https://wa.me/919000000000?text=Hi%2C%20I%20want%20to%20list%20my%20business%20on%20LOCObiz%20in%20${st.name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-whatsapp text-white font-semibold rounded-xl hover:bg-whatsapp-dark transition-colors shadow-md shadow-whatsapp/20"
+            >
+              <MessageCircle className="w-4 h-4" /> List Your Business
+            </a>
           </div>
         </div>
       </section>

@@ -3,19 +3,15 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getStateBySlug } from '@/lib/states'
 import BusinessCard from '@/components/BusinessCard'
-import { ArrowLeft, MessageCircle } from 'lucide-react'
-
-function normalizeSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-')
-}
+import { ChevronRight, MessageCircle } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ state: string; district: string }> }) {
   const { state, district } = await params
   const st = getStateBySlug(state)
   if (!st) return { title: 'Not Found' }
   return {
-    title: `Businesses in ${district.replace(/-/g, ' ')}, ${st.name} | LOCObiz`,
-    description: `Find local businesses in ${district.replace(/-/g, ' ')}, ${st.name}. Restaurants, salons, doctors and more — connect via WhatsApp.`,
+    title: `Best Services in ${district.replace(/-/g, ' ')}, ${st.name} | Connect on WhatsApp`,
+    description: `Find trusted services in ${district.replace(/-/g, ' ')}, ${st.name}. Connect with plumbers, electricians, salons, doctors and more on WhatsApp.`,
   }
 }
 
@@ -41,17 +37,21 @@ export default async function DistrictPage({ params }: { params: Promise<{ state
     <div>
       <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href={`/state/${state}`} className="inline-flex items-center gap-1 text-surface-400 hover:text-white text-sm mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> {st.name}
-          </Link>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">{districtName}</h1>
+          <div className="flex items-center gap-2 text-sm text-surface-400 mb-4">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link href={`/state/${state}`} className="hover:text-white transition-colors">{st.name}</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-white">{districtName}</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Services in {districtName}</h1>
           <p className="text-surface-300">
-            {businesses.length} businesses found in {districtName}, {st.name}
+            {businesses.length} trusted services in {districtName}, {st.name} — connect on WhatsApp.
           </p>
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {businesses.map((biz) => (
