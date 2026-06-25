@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
         <div className="text-center mb-8">
           <MapPin className="w-10 h-10 text-brand-600 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-surface-900">Admin Login</h1>
-          <p className="text-surface-500 text-sm mt-1">LOCObiz Admin Panel</p>
+          <p className="text-surface-500 text-sm mt-1">ADZBE Admin Panel</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-surface-200 p-6 space-y-4">
           <div>

@@ -27,7 +27,7 @@ export default function TrackedWaButton({
         businessId,
         phone,
         name: businessName || null,
-        message: `WhatsApp click from LOCObiz listing`,
+        message: `WhatsApp click from ADZBE listing`,
       }))
     }
   }, [businessId, phone, businessName])

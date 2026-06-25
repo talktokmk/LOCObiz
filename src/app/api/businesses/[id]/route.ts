@@ -9,7 +9,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const result = await db.execute({
-    sql: 'SELECT * FROM businesses WHERE id = ?',
+    sql: "SELECT * FROM businesses WHERE id = ? AND status = 'approved'",
     args: [numericId],
   })
 

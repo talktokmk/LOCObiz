@@ -8,7 +8,7 @@ const tursoToken = process.env.TURSO_AUTH_TOKEN
 
 const db = tursoUrl
   ? createClient({ url: tursoUrl, authToken: tursoToken })
-  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'locobiz.db')}` })
+  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'ADZBE.db')}` })
 
 await db.execute(`CREATE TABLE IF NOT EXISTS states (
   id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT UNIQUE NOT NULL,
@@ -31,12 +31,13 @@ await db.execute(`CREATE TABLE IF NOT EXISTS businesses (
   slug TEXT UNIQUE NOT NULL, category_id INTEGER NOT NULL,
   category_slug TEXT NOT NULL, city TEXT NOT NULL,
   district TEXT, state TEXT, area TEXT,
-  address TEXT, phone TEXT, email TEXT, website TEXT, whatsapp TEXT,
-  description TEXT, services TEXT, rating REAL DEFAULT 0,
+    address TEXT, phone TEXT, email TEXT, website TEXT, whatsapp TEXT,
+    place_id TEXT, description TEXT, services TEXT, rating REAL DEFAULT 0,
   reviews_count INTEGER DEFAULT 0, price_range TEXT, opening_hours TEXT,
   latitude REAL, longitude REAL, image_url TEXT, images TEXT,
-  featured INTEGER DEFAULT 0, verified INTEGER DEFAULT 0,
-  claimed INTEGER DEFAULT 0, claim_token TEXT, upvotes INTEGER DEFAULT 0,
+    featured INTEGER DEFAULT 0, verified INTEGER DEFAULT 0,
+    claimed INTEGER DEFAULT 0, claim_token TEXT, upvotes INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'approved',
   views INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (category_id) REFERENCES categories(id)
@@ -67,6 +68,11 @@ await db.execute(`CREATE TABLE IF NOT EXISTS search_logs (
   results_count INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now'))
 )`)
 
+await db.execute(`CREATE TABLE IF NOT EXISTS subscribers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL,
+  city TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now'))
+)`)
+
 await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_city ON businesses(city)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_district ON businesses(district)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_state ON businesses(state)')
@@ -74,10 +80,14 @@ await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_category_slug ON bus
 await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_districts_state_slug ON districts(state_slug)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)')
+try { await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id) WHERE place_id IS NOT NULL AND place_id != \'\'') } catch {}
 
 try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_description TEXT") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN claimed_by TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGER DEFAULT 0") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'approved'") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN place_id TEXT") } catch {}
 
 console.log('Database initialized successfully')
 db.close()

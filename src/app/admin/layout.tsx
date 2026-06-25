@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-6">
           <Link href="/admin" className="flex items-center gap-2 text-white">
             <MapPin className="w-6 h-6" />
-            <span className="text-lg font-bold">LOCObiz Admin</span>
+            <span className="text-lg font-bold">ADZBE Admin</span>
           </Link>
         </div>
         <nav className="px-4 space-y-1">
@@ -99,7 +99,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => setSidebarOpen(true)} className="text-surface-600">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="ml-3 font-semibold text-surface-900">LOCObiz Admin</span>
+          <span className="ml-3 font-semibold text-surface-900">ADZBE Admin</span>
         </div>
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)}>
@@ -112,7 +112,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="px-4 mb-4">
                 <Link href="/admin" className="flex items-center gap-2 text-white" onClick={() => setSidebarOpen(false)}>
                   <MapPin className="w-6 h-6" />
-                  <span className="text-lg font-bold">LOCObiz Admin</span>
+                  <span className="text-lg font-bold">ADZBE Admin</span>
                 </Link>
               </div>
               <nav className="px-4 space-y-1">

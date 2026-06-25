@@ -1,4 +1,4 @@
-// LOCObiz Scraper - Popup Script
+// ADZBE Scraper - Popup Script
 
 const statusEl = document.getElementById('status')
 const scrapeBtn = document.getElementById('scrapeBtn')
@@ -24,7 +24,7 @@ cityInput.addEventListener('change', () => {
 
 // Load saved server URL
 chrome.storage.sync.get(['serverUrl'], ({ serverUrl }) => {
-  serverUrlInput.value = serverUrl || 'http://localhost:3000'
+  serverUrlInput.value = serverUrl || 'https://adzbe.cloud'
 })
 serverUrlInput.addEventListener('change', () => {
   chrome.storage.sync.set({ serverUrl: serverUrlInput.value })
@@ -123,7 +123,7 @@ function displayResults(businesses) {
   actionsEl.style.display = 'flex'
 }
 
-// Send to LOCObiz
+// Send to ADZBE
 sendBtn.addEventListener('click', async () => {
   if (scrapedBusinesses.length === 0) return
 
@@ -136,11 +136,11 @@ sendBtn.addEventListener('click', async () => {
     businesses: scrapedBusinesses,
     city: cityInput.value.trim(),
   }, (response) => {
-    sendBtn.innerHTML = 'Send to LOCObiz'
+    sendBtn.innerHTML = 'Send to ADZBE'
     sendBtn.disabled = false
 
     if (response?.success) {
-      messageEl.innerHTML = `<div class="success">✓ ${response.result.inserted || scrapedBusinesses.length} businesses imported to LOCObiz!</div>`
+      messageEl.innerHTML = `<div class="success">✓ ${response.result.inserted || scrapedBusinesses.length} businesses imported to ADZBE!</div>`
       scrapedBusinesses = []
       resultsContainer.style.display = 'none'
       countEl.style.display = 'none'

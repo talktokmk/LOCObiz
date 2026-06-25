@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     const biz = await db.execute({
-      sql: 'SELECT id, claimed FROM businesses WHERE slug = ?',
+      sql: "SELECT id, claimed FROM businesses WHERE slug = ? AND status = 'approved'",
       args: [slug],
     })
 

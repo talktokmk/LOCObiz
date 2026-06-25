@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Number(searchParams.get('limit')) || 20, 100)
   const offset = Math.max(Number(searchParams.get('offset')) || 0, 0)
 
-  let sql = 'SELECT * FROM businesses WHERE 1=1'
+  let sql = "SELECT * FROM businesses WHERE status = 'approved'"
   const args: (string | number)[] = []
 
   if (query) {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     args.push(category)
   }
 
-  sql += ' ORDER BY featured DESC, rating DESC, reviews_count DESC LIMIT ? OFFSET ?'
+  sql += ' ORDER BY featured DESC, whatsapp_clicks DESC, rating DESC, reviews_count DESC LIMIT ? OFFSET ?'
   args.push(limit, offset)
 
   const result = await db.execute({ sql, args })

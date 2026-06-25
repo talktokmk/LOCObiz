@@ -9,7 +9,7 @@ const tursoUrl = process.env.TURSO_DB_URL
 const tursoToken = process.env.TURSO_AUTH_TOKEN
 const db = tursoUrl
   ? createClient({ url: tursoUrl, authToken: tursoToken })
-  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'locobiz.db')}` })
+  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'ADZBE.db')}` })
 
 const states = JSON.parse(fs.readFileSync(path.join(__dirname, 'states.json'), 'utf8'))
 

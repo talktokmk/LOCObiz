@@ -41,16 +41,56 @@ const STATE_SLUGS: Record<string, string> = {
 }
 
 const CITY_NORMALIZE: Record<string, string> = {
-  bombay: 'Mumbai', bangalore: 'Bengaluru', 'bengaluru': 'Bengaluru',
-  madras: 'Chennai', chennai: 'Chennai', calcutta: 'Kolkata', kolkata: 'Kolkata',
-  poona: 'Pune', pune: 'Pune', ahmedabad: 'Ahmedabad', jaipur: 'Jaipur',
+  bombay: 'Mumbai', 'mumbai': 'Mumbai',
+  bangalore: 'Bengaluru', 'bengaluru': 'Bengaluru',
+  madras: 'Chennai', chennai: 'Chennai',
+  calcutta: 'Kolkata', kolkata: 'Kolkata',
+  poona: 'Pune', pune: 'Pune',
+  ahmedabad: 'Ahmedabad', jaipur: 'Jaipur',
   lucknow: 'Lucknow', hyderabad: 'Hyderabad', secunderabad: 'Hyderabad',
   coimbatore: 'Coimbatore', indore: 'Indore', bhopal: 'Bhopal',
-  surat: 'Surat', nagpur: 'Nagpur', visakhapatnam: 'Visakhapatnam',
-  vizag: 'Visakhapatnam', thiruvananthapuram: 'Thiruvananthapuram',
-  trivandrum: 'Thiruvananthapuram', kochi: 'Kochi', cochin: 'Kochi',
+  surat: 'Surat', nagpur: 'Nagpur',
+  visakhapatnam: 'Visakhapatnam', vizag: 'Visakhapatnam',
+  thiruvananthapuram: 'Thiruvananthapuram', trivandrum: 'Thiruvananthapuram',
+  kochi: 'Kochi', cochin: 'Kochi',
   chandigarh: 'Chandigarh', guwahati: 'Guwahati', patna: 'Patna',
   ranchi: 'Ranchi', bhubaneswar: 'Bhubaneswar', bhubaneshwar: 'Bhubaneswar',
+  kanpur: 'Kanpur', agra: 'Agra', varanasi: 'Varanasi',
+  meerut: 'Meerut', allahabad: 'Prayagraj', prayagraj: 'Prayagraj',
+  gorakhpur: 'Gorakhpur', moradabad: 'Moradabad',
+  ludhiana: 'Ludhiana', amritsar: 'Amritsar', jalandhar: 'Jalandhar',
+  gurgaon: 'Gurugram', gurugram: 'Gurugram', faridabad: 'Faridabad',
+  nashik: 'Nashik', aurangabad: 'Aurangabad', solapur: 'Solapur',
+  thane: 'Thane', 'navi mumbai': 'Navi Mumbai',
+  vadodara: 'Vadodara', baroda: 'Vadodara', rajkot: 'Rajkot',
+  bhavnagar: 'Bhavnagar', jamnagar: 'Jamnagar',
+  jodhpur: 'Jodhpur', udaipur: 'Udaipur', kota: 'Kota',
+  mysore: 'Mysuru', mysuru: 'Mysuru', hubli: 'Hubli', mangalore: 'Mangaluru', mangaluru: 'Mangaluru',
+  vijayawada: 'Vijayawada', guntur: 'Guntur', nellore: 'Nellore',
+  kurnool: 'Kurnool', tirupati: 'Tirupati', kakinada: 'Kakinada',
+  salem: 'Salem', trichy: 'Tiruchirappalli', tiruchirappalli: 'Tiruchirappalli',
+  madurai: 'Madurai', tirunelveli: 'Tirunelveli', erode: 'Erode',
+  'vellore': 'Vellore', thoothukudi: 'Thoothukudi',
+  warangal: 'Warangal', nizamabad: 'Nizamabad', karimnagar: 'Karimnagar',
+  dehrdaun: 'Dehradun', dehradun: 'Dehradun', haridwar: 'Haridwar',
+  rudrapur: 'Rudrapur', rishikesh: 'Rishikesh',
+  srinagar: 'Srinagar', anantnag: 'Anantnag',
+  imphal: 'Imphal', shillong: 'Shillong', aizawl: 'Aizawl',
+  kohima: 'Kohima', dimapur: 'Dimapur', itanagar: 'Itanagar',
+  gangtok: 'Gangtok', agartala: 'Agartala',
+  panaji: 'Panaji', 'panjim': 'Panaji', margao: 'Margao',
+  porvorim: 'Porvorim', mapusa: 'Mapusa',
+  siliguri: 'Siliguri', asansol: 'Asansol', durgapur: 'Durgapur',
+  bardhaman: 'Bardhaman', malda: 'Malda',
+  bilaspur: 'Bilaspur', raipur: 'Raipur', bhilai: 'Bhilai',
+  gwalior: 'Gwalior', jabalpur: 'Jabalpur', ujjain: 'Ujjain',
+  satna: 'Satna', rewa: 'Rewa', sagar: 'Sagar',
+  kollam: 'Kollam', kannur: 'Kannur', thrissur: 'Thrissur',
+  alappuzha: 'Alappuzha', palakkad: 'Palakkad', kottayam: 'Kottayam',
+  pathanamthitta: 'Pathanamthitta', idukki: 'Idukki',
+  faridkot: 'Faridkot', bathinda: 'Bathinda', patiala: 'Patiala',
+  ropar: 'Rupnagar', mohali: 'Mohali', pathankot: 'Pathankot',
+  'new delhi': 'Delhi',
 }
 
 interface ParsedAddress {
@@ -138,7 +178,7 @@ export async function POST(request: NextRequest) {
   let session = await getSession()
   if (!session) {
     const apiKey = request.headers.get('x-api-key')
-    if (apiKey === 'locobiz-extension') {
+    if (apiKey === 'ADZBE-extension') {
       session = { id: 0, username: 'extension' }
     }
   }
@@ -173,8 +213,42 @@ export async function POST(request: NextRequest) {
       const name = b.name.trim()
       if (!name) { skipped++; continue }
 
+      const phone = b.phone || ''
+
+      if (phone) {
+        const dup = await db.execute({
+          sql: 'SELECT id FROM businesses WHERE phone = ? LIMIT 1',
+          args: [phone],
+        })
+        if (dup.rows.length > 0) { skipped++; continue }
+      }
+
       const catRaw = b.category || ''
       let catSlug = mapCategory(catRaw, catNames)
+      if (catSlug === 'restaurants' && catRaw && !/restaurant|cafe|food|dining|bakery|bistro|hotel|eatery|mess|tiffin|snacks|fast food|sweets|ice cream/i.test(catRaw)) {
+        const newSlug = slugify(catRaw)
+        if (newSlug && !catMap.has(newSlug)) {
+          const displayName = catRaw.replace(/\b\w/g, (c: string) => c.toUpperCase())
+          try {
+            await db.execute({
+              sql: 'INSERT OR IGNORE INTO categories (slug, name) VALUES (?, ?)',
+              args: [newSlug, displayName],
+            })
+            const newCat = await db.execute({
+              sql: 'SELECT id FROM categories WHERE slug = ?',
+              args: [newSlug],
+            })
+            if (newCat.rows.length > 0) {
+              const row = newCat.rows[0] as Record<string, unknown>
+              catMap.set(newSlug, row.id as number)
+              catNames.push({ name: displayName.toLowerCase(), slug: newSlug })
+              catSlug = newSlug
+            }
+          } catch { /* keep restaurants as fallback */ }
+        } else if (newSlug && catMap.has(newSlug)) {
+          catSlug = newSlug
+        }
+      }
       if (!catMap.has(catSlug)) catSlug = 'restaurants'
       const catId = catMap.get(catSlug)
       if (!catId) { skipped++; continue }
@@ -182,17 +256,15 @@ export async function POST(request: NextRequest) {
       const address = b.address || ''
       const parsed = parseIndianAddress(address, normalizedDefault)
 
-      const phone = b.phone || ''
       const website = b.website || ''
-      const rating = b.rating != null ? Math.min(5, Math.max(0, Number(b.rating))) : 0
-      const reviews = b.reviews ? Number(b.reviews) : 0
+      const placeId = b.placeId || ''
       const slug = `${slugify(name)}-${Date.now()}-${i}`
 
       try {
         await db.execute({
           sql: `INSERT OR IGNORE INTO businesses
-                (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, description, services, rating, reviews_count, verified, views)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, place_id, description, services, rating, reviews_count, verified, views, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
           args: [
             name, slug, catId, catSlug,
             parsed.city || normalizedDefault,
@@ -200,10 +272,10 @@ export async function POST(request: NextRequest) {
             parsed.stateSlug || null,
             parsed.area || null,
             address,
-            phone, website,
+            phone, website, placeId,
             `${name} — ${parsed.city || address || name}`,
-            '[]', rating, reviews, 1,
-            Math.floor(Math.random() * 50 + 1),
+            '[]', 0, 0, 0,
+            0,
           ],
         })
         inserted++
@@ -223,43 +295,58 @@ function mapCategory(text: string, dbCategories: { name: string; slug: string }[
   const t = text.toLowerCase()
 
   const hardcoded: [RegExp, string][] = [
-    [/restaurant|cafe|food|dining|bakery|cater|bistro|hotel|eatery|mess|tiffin/i, 'restaurants'],
-    [/salon|spa|beauty|hair|barber|nail|makeup|parlour|unisex|threading|facial|massage/i, 'salons'],
-    [/gym|fitness|yoga|workout|crossfit|zumba|pilates|aerobics|trainer/i, 'gyms'],
-    [/doctor|clinic|hospital|dentist|physio|ayurvedic|healthcare|medical|nursing|diagnostic|eye|dental|physician|surgeon|pediatric|cardio|ortho/i, 'doctors'],
-    [/plumber|plumbing|pipe|drain|water heater|septic/i, 'plumbers'],
-    [/electric|electrical|wiring|switchboard|inverter|ac repair|refrigeration/i, 'electricians'],
-    [/tutor|class|coaching|training|education|learning|academy|institute|teacher|mentor|tuition|preschool|school/i, 'tutors'],
-    [/grocery|supermarket|general store|provision|kirana|mart|vegetable|fruit shop|daily needs|organic store/i, 'grocery'],
-    [/pharmacy|medical store|drugstore|chemist|medicine|drugs|health store|wellness/i, 'pharmacies'],
-    [/carpenter|carpentry|furniture|wood|joinery|modular|kitchen cabinet/i, 'carpenters'],
-    [/painter|painting|wall|decorator|home painting|interior paint/i, 'painters'],
-    [/packers|movers|relocation|shifting|transport|logistics|courier|parcel/i, 'packers-and-movers'],
-    [/event|wedding|party|planner|decorator|celebration|stage|sound|dj|entertainment/i, 'event-planners'],
-    [/photographer|photography|videography|photo shoot|wedding photo|album/i, 'photographers'],
-    [/travel|tour|holiday|vacation|trip|cab|taxi|cab service|car rental|bus booking|flight/i, 'travel-agents'],
-    [/real estate|property|builder|construction|developer|broker|agent|flat|apartment|plot|land/i, 'real-estate'],
-    [/caterer|catering|party food|event food|catering service|home food|meal service/i, 'caterers'],
-    [/tailor|stitching|alteration|dress|couture|embroidery|fabric/i, 'tailors'],
-    [/laundry|dry clean|wash|ironing|dhobi|laundromat|dry cleaning/i, 'laundry'],
-    [/printer|printing|digital print|offset|flex|banner|business card|visiting card|brochure/i, 'printing-services'],
-    [/lawyer|advocate|legal|attorney|notary|legal advisor|court|solicitor/i, 'lawyers'],
-    [/accountant|ca|audit|tax|gst|filing|bookkeeping|financial|chartered/i, 'accountants'],
-    [/mechanic|auto|garage|car repair|bike repair|service center|workshop|tyre|battery/i, 'mechanics'],
-    [/pest|termite|cockroach|mosquito|rodent|fumigation|insect|spray/i, 'pest-control'],
-    [/security|guard|cctv|camera|surveillance|alarm|security system|watchman/i, 'security-services'],
-    [/interior|designer|interior design|home decor|furnishing|curtain|modular kitchen|wardrobe/i, 'interior-designers'],
-    [/dermatologist|skin|hair care|skin care|laser|facial|aesthetic|cosmetic/i, 'dermatologists'],
     [/dentist|dental|root canal|braces|teeth whitening|orthodontist|clinic dental/i, 'dentists'],
+    [/dermatologist|skin care|skin clinic|laser treatment|aesthetic|cosmetic clinic|hair fall|acne|scar/i, 'dermatologists'],
+    [/caterer|catering service|party food|event food|catering service|home food|meal service|home chef/i, 'caterers'],
+    [/accountant|chartered accountant|ca |audit|tax filing|gst filing|bookkeeping|financial advisor|itr/i, 'accountants'],
+    [/lawyer|advocate|legal advisor|attorney|notary|court|solicitor|legal consultant|litigation/i, 'lawyers'],
+    [/packers and movers|packers & movers|movers|relocation|shifting|transport service|logistics company|courier service|parcel/i, 'packers-and-movers'],
+    [/event planner|event management|wedding planner|party organizer|decorator|celebration|stage setup|sound system|dj |entertainment/i, 'event-planners'],
+    [/photographer|photography|videography|photo shoot|wedding photography|album|camera|photo studio/i, 'photographers'],
+    [/travel agent|travel agency|tour operator|holiday package|vacation trip|cab service|taxi service|car rental|bus booking|flight booking|travel desk/i, 'travel-agents'],
+    [/real estate|property dealer|builder|construction company|developer|broker|flat|apartment|plot|land|realty/i, 'real-estate'],
+    [/painter|painting service|wall painter|home painting|interior paint|house painting|paint contractor/i, 'painters'],
+    [/interior designer|interior design|home decor|furnishing|curtain|modular kitchen|wardrobe design|home interior/i, 'interior-designers'],
+    [/laundry|dry cleaner|dry clean|wash and iron|ironing service|dhobi|laundromat|dry cleaning|laundry service/i, 'laundry'],
+    [/tailor|stitching|alteration|dress making|couture|embroidery|fabric|blouse stitching|uniform/i, 'tailors'],
+    [/printer|printing service|digital print|offset print|flex printing|banner|business card|visiting card|brochure|flyer|poster/i, 'printing-services'],
+    [/mechanic|auto repair|garage|car repair|bike repair|service center|workshop|tyre shop|battery|oil change/i, 'mechanics'],
+    [/pest control|termite treatment|cockroach|mosquito|rodent|fumigation|insect control|spray|bed bugs/i, 'pest-control'],
+    [/security guard|security service|cctv installation|camera|surveillance|alarm system|security system|watchman|security agency/i, 'security-services'],
+    [/doctor|clinic|hospital|physiotherapist|ayurvedic|healthcare|medical center|nursing home|diagnostic|eye hospital|physician|surgeon|pediatric|cardio|orthopedic|general physician/i, 'doctors'],
+    [/plumber|plumbing|pipe repair|drain cleaning|water heater|septic tank|tap repair|bathroom fitting/i, 'plumbers'],
+    [/electrician|electrical|wiring|switchboard|inverter|ac repair|refrigeration|fan repair|lighting/i, 'electricians'],
+    [/carpenter|carpentry|furniture repair|furniture maker|wood work|joinery|modular furniture|kitchen cabinet|wardrobe/i, 'carpenters'],
+    [/tutor|tuition|coaching class|training institute|education|learning center|academy|teacher|mentor|preschool|school|computer class|spoken english|exam preparation/i, 'tutors'],
+    [/gym|fitness center|yoga studio|workout|crossfit|zumba|pilates|aerobics|personal trainer|cardio/i, 'gyms'],
+    [/salon|spa|beauty parlor|hair salon|barber|nail salon|makeup|unisex salon|threading|facial|massage|bridal|mehandi/i, 'salons'],
+    [/pharmacy|medical store|drugstore|chemist|medicine|drugs|health store|wellness store|ayurvedic store/i, 'pharmacies'],
+    [/grocery|supermarket|general store|provision store|kirana|mart|vegetable shop|fruit shop|daily needs|organic store|provision|ration/i, 'grocery'],
+    [/restaurant|cafe|food|dining|bakery|bistro|hotel|eatery|mess|tiffin|snacks|fast food|sweets|ice cream/i, 'restaurants'],
   ]
 
   for (const [regex, slug] of hardcoded) {
     if (regex.test(t)) return slug
   }
 
+  let bestScore = 0
+  let bestSlug = 'restaurants'
   for (const cat of dbCategories) {
-    if (t.includes(cat.name) || t.includes(cat.slug.replace(/-/g, ' '))) return cat.slug
+    let score = 0
+    const catName = cat.name.toLowerCase()
+    const catSlug = cat.slug.replace(/-/g, ' ')
+    const words = t.split(/\s+/)
+    for (const word of words) {
+      if (catName.includes(word)) score += 2
+      if (catSlug.includes(word)) score += 1
+    }
+    if (t.includes(catName)) score += 3
+    if (t === catSlug) score += 5
+    if (score > bestScore) {
+      bestScore = score
+      bestSlug = cat.slug
+    }
   }
 
-  return 'restaurants'
+  return bestSlug
 }

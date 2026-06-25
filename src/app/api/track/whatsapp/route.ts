@@ -13,6 +13,11 @@ export async function POST(request: NextRequest) {
       args: [businessId, name || null, phone, message || null, 'wa.me'],
     })
 
+    await db.execute({
+      sql: 'UPDATE businesses SET whatsapp_clicks = whatsapp_clicks + 1 WHERE id = ?',
+      args: [businessId],
+    })
+
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

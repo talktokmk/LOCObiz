@@ -1,9 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp, List } from 'lucide-react'
+import Link from 'next/link'
+
+interface ImportedBusiness {
+  id: number
+  name: string
+  slug: string
+  city: string
+  category_slug: string
+  phone: string
+  created_at: string
+}
 
 export default function AdminScraperPage() {
+  const [recent, setRecent] = useState<ImportedBusiness[]>([])
+  const [loadingRecent, setLoadingRecent] = useState(true)
   const [showPlaces, setShowPlaces] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [query, setQuery] = useState('')
@@ -16,6 +29,17 @@ export default function AdminScraperPage() {
   const [error, setError] = useState('')
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null)
   const [showKey, setShowKey] = useState(false)
+
+  useEffect(() => { fetchRecent() }, [])
+
+  async function fetchRecent() {
+    try {
+      const res = await fetch('/api/admin/businesses?limit=20')
+      const data = res.ok ? await res.json() : []
+      setRecent(data)
+    } catch { setRecent([]) }
+    finally { setLoadingRecent(false) }
+  }
 
   const categories = ['restaurants', 'salons', 'gyms', 'doctors', 'plumbers', 'electricians', 'tutors', 'grocery', 'pharmacies', 'carpenters']
 
@@ -54,7 +78,7 @@ export default function AdminScraperPage() {
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || 'Import failed')
-      else { setImportResult(data); if (data.inserted > 0) { setResults([]); setSelected(new Set()) } }
+      else { setImportResult(data); if (data.inserted > 0) { setResults([]); setSelected(new Set()); fetchRecent() } }
     } catch { setError('Network error') }
     finally { setImporting(false) }
   }
@@ -71,9 +95,9 @@ export default function AdminScraperPage() {
             <Globe className="w-6 h-6 text-brand-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-surface-900 mb-1">LOCObiz Scraper Extension</h2>
+            <h2 className="text-lg font-bold text-surface-900 mb-1">ADZBE Scraper Extension</h2>
             <p className="text-sm text-surface-500 mb-4">
-              Install the Chrome extension, search on Google Maps, and send data directly to LOCObiz.
+              Install the Chrome extension, search on Google Maps, and send data directly to ADZBE.
               <strong className="text-surface-700"> Free — no API key needed.</strong>
             </p>
 
@@ -96,7 +120,7 @@ export default function AdminScraperPage() {
                 <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
                 <div>
                   <div className="font-medium text-surface-800">Click & Send</div>
-                  <div className="text-surface-500 text-xs mt-0.5">Scrape button → Send to LOCObiz</div>
+                  <div className="text-surface-500 text-xs mt-0.5">Scrape button → Send to ADZBE</div>
                 </div>
               </div>
             </div>
@@ -107,15 +131,58 @@ export default function AdminScraperPage() {
                 <p>1. Open Chrome and go to <code className="text-brand-600 bg-brand-50 px-1 rounded">chrome://extensions</code></p>
                 <p>2. Enable <strong>"Developer mode"</strong> (toggle in top-right)</p>
                 <p>3. Click <strong>"Load unpacked"</strong></p>
-                <p>4. Select the <code className="text-brand-600 bg-brand-50 px-1 rounded">extension</code> folder inside your LOCObiz project</p>
-                <p>5. The LOCObiz icon appears in your toolbar. Go to Google Maps, search, and click it!</p>
+                <p>4. Select the <code className="text-brand-600 bg-brand-50 px-1 rounded">extension</code> folder inside your ADZBE project</p>
+                <p>5. The ADZBE icon appears in your toolbar. Go to Google Maps, search, and click it!</p>
                 <p className="text-surface-400 text-xs mt-2">
-                  Folder path: <code className="text-surface-500">E:\Antigravity\locobiz\extension</code>
+                  Folder path: <code className="text-surface-500">E:\Antigravity\ADZBE\extension</code>
                 </p>
               </div>
             </details>
           </div>
         </div>
+      </div>
+
+      {/* ── Recently Imported ── */}
+      <div className="bg-white rounded-xl border border-surface-200 p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <List className="w-5 h-5 text-surface-500" />
+            <h2 className="text-lg font-bold text-surface-900">Recently Imported</h2>
+          </div>
+          <Link href="/admin/businesses" className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
+            View all <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+        {loadingRecent ? (
+          <p className="text-sm text-surface-400">Loading...</p>
+        ) : recent.length === 0 ? (
+          <p className="text-sm text-surface-500">No businesses imported yet. Use the extension or Google Places API above to import real data.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-surface-200 text-surface-600 text-xs">
+                  <th className="text-left pb-2 font-medium">Name</th>
+                  <th className="text-left pb-2 font-medium">City</th>
+                  <th className="text-left pb-2 font-medium">Category</th>
+                  <th className="text-left pb-2 font-medium">Phone</th>
+                  <th className="text-left pb-2 font-medium">Imported</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((b) => (
+                  <tr key={b.id} className="border-b border-surface-100 last:border-b-0">
+                    <td className="py-2 pr-4 font-medium text-surface-900">{b.name}</td>
+                    <td className="py-2 pr-4 text-surface-600">{b.city || '-'}</td>
+                    <td className="py-2 pr-4 text-surface-600 capitalize">{b.category_slug}</td>
+                    <td className="py-2 pr-4 text-surface-600">{b.phone || '-'}</td>
+                    <td className="py-2 text-surface-400 text-xs whitespace-nowrap">{b.created_at ? new Date(b.created_at + 'Z').toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* ── Google Places API (collapsible backup) ── */}

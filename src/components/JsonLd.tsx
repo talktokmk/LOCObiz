@@ -66,11 +66,14 @@ export function LocalBusinessJsonLd({ data }: { data: LocalBusinessData }) {
       },
     }),
     ...(data.openingHours && data.openingHours.length > 0 && {
-      openingHoursSpecification: data.openingHours.map((h) => ({
-        '@type': 'OpeningHoursSpecification',
-        opens: h.split('-')[0]?.trim(),
-        closes: h.split('-')[1]?.trim(),
-      })),
+      openingHoursSpecification: data.openingHours.map((h) => {
+        const timeMatch = h.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/)
+        return {
+          '@type': 'OpeningHoursSpecification',
+          opens: timeMatch ? timeMatch[1] : '09:00',
+          closes: timeMatch ? timeMatch[2] : '18:00',
+        }
+      }),
     }),
   }
 
@@ -128,13 +131,13 @@ export function WebsiteJsonLd() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'LOCObiz',
-    url: 'https://locobiz.in',
+    name: 'ADZBE',
+    url: 'https://adzbe.cloud',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://locobiz.in/search?q={search_term_string}',
+        urlTemplate: 'https://adzbe.cloud/search?q={search_term_string}',
       },
       'query-input': 'required name=search_term_string',
     },

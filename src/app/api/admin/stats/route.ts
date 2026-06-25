@@ -8,12 +8,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const [totalBiz, totalLeads, totalViews, totalCities, totalClaims] = await Promise.all([
+  const [totalBiz, totalLeads, totalViews, totalCities, totalClaims, totalWaClicks, pendingBiz] = await Promise.all([
     db.execute('SELECT COUNT(*) as count FROM businesses'),
     db.execute('SELECT COUNT(*) as count FROM leads'),
     db.execute('SELECT COALESCE(SUM(views), 0) as count FROM businesses'),
     db.execute('SELECT COUNT(DISTINCT city) as count FROM businesses'),
     db.execute("SELECT COUNT(*) as count FROM leads WHERE source = 'claim'"),
+    db.execute('SELECT COALESCE(SUM(whatsapp_clicks), 0) as count FROM businesses'),
+    db.execute("SELECT COUNT(*) as count FROM businesses WHERE status = 'pending'"),
   ])
 
   return NextResponse.json({
@@ -22,5 +24,7 @@ export async function GET() {
     totalViews: Number((totalViews.rows[0] as Record<string, unknown>).count),
     totalCities: Number((totalCities.rows[0] as Record<string, unknown>).count),
     totalClaims: Number((totalClaims.rows[0] as Record<string, unknown>).count),
+    totalWaClicks: Number((totalWaClicks.rows[0] as Record<string, unknown>).count),
+    pendingBusinesses: Number((pendingBiz.rows[0] as Record<string, unknown>).count),
   })
 }

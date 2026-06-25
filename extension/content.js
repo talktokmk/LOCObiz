@@ -1,4 +1,4 @@
-// LOCObiz Scraper - Google Maps Content Script
+// ADZBE Scraper - Google Maps Content Script
 
 function extractName(el) {
   const s = ['.fontHeadlineSmall', '.qBF1Pd', 'h3', '[role="heading"]', 'a[href*="/maps/place/"]']

@@ -12,16 +12,17 @@ interface BusinessCardProps {
   rating?: number
   reviewsCount?: number
   phone?: string
+  address?: string
   verified?: boolean
   featured?: boolean
   rank?: number
 }
 
 export default function BusinessCard({
-  slug, name, category, city, area, rating, reviewsCount, phone, verified, featured, rank,
+  slug, name, category, city, area, rating, reviewsCount, phone, address, verified, featured, rank,
 }: BusinessCardProps) {
   const waNumber = phone?.replace(/[^0-9]/g, '') || ''
-  const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20LOCObiz.%20I%27m%20interested%20in%20your%20services.`
+  const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`
 
   return (
     <div className="bg-white rounded-xl border border-surface-200 hover:border-whatsapp/40 hover:shadow-lg hover:shadow-whatsapp/10 transition-all duration-300 animate-fade-in overflow-hidden">
@@ -65,10 +66,15 @@ export default function BusinessCard({
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-xs text-surface-400 mb-4">
+        <div className="flex items-center gap-1 text-xs text-surface-400 mb-1">
           <MapPin className="w-3 h-3 shrink-0" />
-          <span className="truncate">{area}, {city}</span>
+          <span className="truncate">{address || `${area ? area + ', ' : ''}${city}`}</span>
         </div>
+        {phone && (
+          <div className="flex items-center gap-1 text-xs text-surface-400 mb-4">
+            <span className="truncate">{phone}</span>
+          </div>
+        )}
 
         <a
           href={waUrl}

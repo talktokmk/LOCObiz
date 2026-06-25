@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server'
-import { seedDatabase } from '@/lib/seed'
 
 export async function POST() {
-  try {
-    const result = await seedDatabase()
-    return NextResponse.json(result)
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 })
-  }
+  return NextResponse.json(
+    { error: 'Seed endpoint is disabled in production. Use real data imports via /api/admin/import or /api/admin/extension-import.' },
+    { status: 403 }
+  )
 }

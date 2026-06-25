@@ -4,7 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dbPath = path.join(__dirname, '..', 'data', 'locobiz.db')
+const dbPath = path.join(__dirname, '..', 'data', 'ADZBE.db')
 const db = createClient({ url: `file:${dbPath}` })
 
 // ── States & Districts ──────────────────────────────────────────────

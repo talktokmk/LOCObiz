@@ -1,17 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "LOCObiz Scraper",
+  "name": "ADZBE Scraper",
   "version": "1.0.0",
-  "description": "Scrape Google Maps business data directly to LOCObiz admin panel. Free, no API key needed.",
+  "description": "Scrape Google Maps business data directly to ADZBE admin panel. Free, no API key needed.",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://www.google.com/maps/*",
     "http://localhost:3000/*",
-    "https://*.vercel.app/*"
+    "https://*.vercel.app/*",
+    "https://adzbe.cloud/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "LOCObiz Scraper"
+    "default_title": "ADZBE Scraper"
   },
   "content_scripts": [
     {

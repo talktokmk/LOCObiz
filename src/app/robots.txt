@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://adzbe.cloud/sitemap.xml

@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
 
     const allowedFields = ['name', 'phone', 'email', 'website', 'whatsapp', 'description',
       'services', 'price_range', 'opening_hours', 'featured', 'verified', 'rating', 'address', 'area',
-      'meta_title', 'meta_description']
+      'meta_title', 'meta_description', 'status']
     const updates: string[] = []
     const args: (string | number)[] = []
 
@@ -60,6 +60,29 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const body = await request.json()
+    const { action } = body
+
+    if (action === 'approve_all') {
+      const result = await db.execute({
+        sql: "UPDATE businesses SET status = 'approved', updated_at = datetime('now') WHERE status = 'pending'",
+      })
+      return NextResponse.json({ success: true, count: result.rowsAffected })
+    }
+
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }

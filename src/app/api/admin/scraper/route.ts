@@ -162,11 +162,11 @@ async function handleImport(body: Record<string, unknown>) {
       const catId = catMap.get(catSlug)!
 
       await db.execute({
-        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, address, phone, website, description, services, rating, latitude, longitude, featured, verified, views)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, address, phone, website, description, services, rating, latitude, longitude, featured, verified, views, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         args: [name, slug, catId, catSlug, city, address, phone, website,
           `${name} — ${address}`,
-          '[]', rating, lat, lng, 0, 1, Math.floor(Math.random() * 100 + 1)],
+          '[]', rating, lat, lng, 0, 0, 0],
       })
       inserted++
     } catch (e: unknown) {

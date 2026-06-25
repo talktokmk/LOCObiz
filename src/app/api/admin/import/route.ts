@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
       try {
         await db.execute({
           sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area,
-                address, phone, website, whatsapp, description, services, rating, featured, verified, views)
-                SELECT ?, ?, id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM categories WHERE slug = ?`,
+                address, phone, website, whatsapp, description, services, rating, featured, verified, views, status)
+                SELECT ?, ?, id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending' FROM categories WHERE slug = ?`,
           args: [name, slug, catSlug, city, district, state, area, address, phone, website, whatsapp,
-            description, services, rating, featured, verified, Math.floor(Math.random() * 100 + 1), catSlug],
+            description, services, rating, featured, verified, 0, catSlug],
         })
         inserted++
       } catch (e: unknown) {

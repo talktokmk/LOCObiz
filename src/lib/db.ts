@@ -12,7 +12,7 @@ function createDbClient() {
     })
   }
 
-  const dbPath = path.join(process.cwd(), 'data', 'locobiz.db')
+  const dbPath = path.join(process.cwd(), 'data', 'ADZBE.db')
   return createClient({
     url: `file:${dbPath}`,
   })
@@ -43,11 +43,12 @@ export async function initDb() {
     category_slug TEXT NOT NULL, city TEXT NOT NULL,
     district TEXT, state TEXT, area TEXT,
     address TEXT, phone TEXT, email TEXT, website TEXT, whatsapp TEXT,
-    description TEXT, services TEXT, rating REAL DEFAULT 0,
+    place_id TEXT, description TEXT, services TEXT, rating REAL DEFAULT 0,
     reviews_count INTEGER DEFAULT 0, price_range TEXT, opening_hours TEXT,
     latitude REAL, longitude REAL, image_url TEXT, images TEXT,
     featured INTEGER DEFAULT 0, verified INTEGER DEFAULT 0,
     claimed INTEGER DEFAULT 0, claim_token TEXT, upvotes INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'approved',
     views INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (category_id) REFERENCES categories(id)
@@ -89,4 +90,7 @@ export async function initDb() {
   try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_description TEXT") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN claimed_by TEXT") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGER DEFAULT 0") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'approved'") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN place_id TEXT") } catch {}
 }

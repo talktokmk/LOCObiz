@@ -8,7 +8,7 @@ const tursoUrl = process.env.TURSO_DB_URL
 const tursoToken = process.env.TURSO_AUTH_TOKEN
 const db = tursoUrl
   ? createClient({ url: tursoUrl, authToken: tursoToken })
-  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'locobiz.db')}` })
+  : createClient({ url: `file:${path.join(__dirname, '..', 'data', 'ADZBE.db')}` })
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 
 const statesData = [
@@ -152,7 +152,7 @@ async function queryCity(city) {
   const q = buildCityQuery(city)
   try {
     const res = await fetch(`${OVERPASS_URL}?data=${encodeURIComponent(q)}`, {
-      headers: { 'User-Agent': 'LOCObiz/1.0' },
+      headers: { 'User-Agent': 'ADZBE/1.0' },
       signal: AbortSignal.timeout(40000),
     })
     if (!res.ok) return []
@@ -172,7 +172,7 @@ function pickArea(osmTags, cfg) {
 async function main() {
   const existing = await db.execute('SELECT COUNT(*) as c FROM categories')
   if (Number(existing.rows[0].c) > 0) {
-    console.log('Already seeded. Delete data/locobiz.db first to re-seed.')
+    console.log('Already seeded. Delete data/ADZBE.db first to re-seed.')
     db.close()
     return
   }

@@ -51,27 +51,13 @@ export default function AdminImportPage() {
     }
   }
 
-  function handleSample() {
-    setRaw(`[
-  { "name": "Priya's Kitchen", "category": "restaurants", "city": "Mumbai", "area": "Bandra", "phone": "+91 9876543210", "rating": 4.5 },
-  { "name": "Sparkle Salon", "category": "salons", "city": "Delhi", "area": "Hauz Khas", "phone": "+91 8765432109" },
-  { "name": "Fit Zone Gym", "category": "gyms", "city": "Bangalore", "area": "Koramangala", "phone": "+91 7654321098", "website": "https://fitzone.example.com" }
-]`)
-    setPreview(null)
-    setParseError('')
-    setResult(null)
-  }
 
-  const categories = ['restaurants', 'salons', 'gyms', 'doctors', 'plumbers', 'electricians', 'tutors', 'grocery', 'pharmacies', 'carpenters']
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-surface-900 mb-2">Bulk Import Businesses</h1>
       <p className="text-surface-500 mb-6">
-        Paste scraped business data as JSON. {' '}
-        <button onClick={handleSample} className="text-brand-600 hover:underline text-sm font-medium">
-          Load sample
-        </button>
+        Paste scraped business data as JSON.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -149,7 +135,7 @@ export default function AdminImportPage() {
           <div>
             <h4 className="font-medium text-surface-800 mb-1">Optional</h4>
             <ul className="space-y-1 text-surface-600">
-              <li><code className="text-brand-600 bg-brand-50 px-1 rounded">category</code> — One of: {categories.join(', ')}</li>
+              <li><code className="text-brand-600 bg-brand-50 px-1 rounded">category</code> — Slug matching a category in the DB (e.g. <code>restaurants</code>, <code>salons</code>)</li>
               <li><code className="text-brand-600 bg-brand-50 px-1 rounded">city</code> — e.g. Mumbai, Delhi</li>
               <li><code className="text-brand-600 bg-brand-50 px-1 rounded">area</code> — e.g. Andheri, Koramangala</li>
               <li><code className="text-brand-600 bg-brand-50 px-1 rounded">phone</code> — +91 9876543210</li>

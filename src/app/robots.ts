@@ -7,6 +7,6 @@ export default function robots() {
         disallow: ['/admin/', '/api/'],
       },
     ],
-    sitemap: 'https://locobiz.in/sitemap.xml',
+    sitemap: 'https://adzbe.cloud/sitemap.xml',
   }
 }

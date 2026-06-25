@@ -3,7 +3,13 @@ import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { db } from './db'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'locobiz-dev-secret-change-in-production'
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required. Set it to a random 64-character string.')
+  }
+  return secret
+})()
 const SALT_ROUNDS = 10
 
 export async function hashPassword(password: string): Promise<string> {
