@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node scripts/init-db.mjs && node scripts/seed-real.mjs",
+    "seed:full": "node scripts/init-db.mjs && node scripts/seed-full.mjs",
     "db:init": "node scripts/init-db.mjs"
   },
   "dependencies": {
