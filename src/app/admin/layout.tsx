@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Store, MessageSquare, FileText, LogOut, MapPin, Menu, X, Upload, Search } from 'lucide-react'
+import { LayoutDashboard, Store, MessageSquare, FileText, LogOut, MapPin, Menu, X, Upload, Search, Tags } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<{ username: string } | null>(null)
@@ -47,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/businesses', label: 'Businesses', icon: Store },
     { href: '/admin/leads', label: 'Leads', icon: MessageSquare },
     { href: '/admin/claims', label: 'Claims', icon: FileText },
+    { href: '/admin/categories', label: 'Categories', icon: Tags },
     { href: '/admin/scraper', label: 'Scraper', icon: Search },
     { href: '/admin/import', label: 'Import', icon: Upload },
   ]

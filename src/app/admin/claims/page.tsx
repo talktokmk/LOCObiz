@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { formatDate } from '@/lib/utils'
+import { CheckCircle, XCircle } from 'lucide-react'
 
 interface Claim {
   id: number
@@ -19,12 +20,28 @@ export default function AdminClaimsPage() {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch('/api/admin/claims')
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setClaims(data))
-      .finally(() => setLoading(false))
-  }, [])
+  async function load() {
+    try {
+      const res = await fetch('/api/admin/claims')
+      setClaims(res.ok ? await res.json() : [])
+    } catch {} finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function handleAction(id: number, action: 'approve' | 'reject') {
+    if (action === 'reject' && !confirm('Reject this claim?')) return
+    try {
+      const res = await fetch('/api/admin/claims', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      })
+      if (res.ok) await load()
+    } catch {}
+  }
 
   if (loading) return <p className="text-surface-500">Loading...</p>
 
@@ -44,6 +61,7 @@ export default function AdminClaimsPage() {
                   <th className="text-left px-4 py-3 font-medium text-surface-600">Phone</th>
                   <th className="text-left px-4 py-3 font-medium text-surface-600">Status</th>
                   <th className="text-left px-4 py-3 font-medium text-surface-600">Date</th>
+                  <th className="text-right px-4 py-3 font-medium text-surface-600">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -54,10 +72,30 @@ export default function AdminClaimsPage() {
                     <td className="px-4 py-3 text-surface-600">{claim.phone}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${claim.claimed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {claim.claimed ? 'Claimed' : 'Pending'}
+                        {claim.claimed ? 'Approved' : 'Pending'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-surface-500 whitespace-nowrap">{formatDate(claim.created_at)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {!claim.claimed ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleAction(claim.id, 'approve')}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200 transition-colors"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleAction(claim.id, 'reject')}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5" /> Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-green-600 font-medium">Approved</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

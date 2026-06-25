@@ -35,7 +35,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const allowedFields = ['name', 'phone', 'email', 'website', 'whatsapp', 'description',
-      'services', 'price_range', 'opening_hours', 'featured', 'verified', 'rating', 'address', 'area']
+      'services', 'price_range', 'opening_hours', 'featured', 'verified', 'rating', 'address', 'area',
+      'meta_title', 'meta_description']
     const updates: string[] = []
     const args: (string | number)[] = []
 

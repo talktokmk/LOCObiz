@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import BusinessCard from '@/components/BusinessCard'
+import { BreadcrumbJsonLd } from '@/components/JsonLd'
 import { MessageCircle, TrendingUp, ArrowRight, ChevronRight } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }) {
@@ -31,7 +32,12 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const categories = [...new Set(businesses.map((b) => b.category_slug))]
 
   return (
-    <div>
+    <>
+      <BreadcrumbJsonLd items={[
+        { name: 'Home', item: 'https://locobiz.in/' },
+        { name: `${cityName} Services`, item: `https://locobiz.in/city/${city}` },
+      ]} />
+      <div>
       <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-sm text-surface-400 mb-4">
@@ -125,5 +131,6 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         </div>
       </section>
     </div>
+    </>
   )
 }

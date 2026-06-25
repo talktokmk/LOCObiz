@@ -75,5 +75,9 @@ await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(s
 await db.execute('CREATE INDEX IF NOT EXISTS idx_districts_state_slug ON districts(state_slug)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)')
 
+try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_description TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN claimed_by TEXT") } catch {}
+
 console.log('Database initialized successfully')
 db.close()

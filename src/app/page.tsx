@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import SearchBar from '@/components/SearchBar'
+import { WebsiteJsonLd } from '@/components/JsonLd'
 import { TrendingUp, Zap, MessageCircle, ArrowRight } from 'lucide-react'
 
 export default async function HomePage() {
@@ -23,7 +24,9 @@ export default async function HomePage() {
   } catch {}
 
   return (
-    <div>
+    <>
+      <WebsiteJsonLd />
+      <div>
       <section className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-900 text-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-whatsapp/20 text-whatsapp-light rounded-full text-sm font-medium mb-6">
@@ -125,5 +128,6 @@ export default async function HomePage() {
         </div>
       </section>
     </div>
+    </>
   )
 }
