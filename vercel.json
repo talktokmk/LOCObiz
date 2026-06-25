@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "node scripts/init-db.mjs && next build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+}

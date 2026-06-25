@@ -1,65 +1,164 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { db } from '@/lib/db'
+import SearchBar from '@/components/SearchBar'
+import BusinessCard from '@/components/BusinessCard'
+import { Building2, Star, TrendingUp, Shield } from 'lucide-react'
 
-export default function Home() {
+async function getCategories() {
+  const result = await db.execute('SELECT * FROM categories ORDER BY name')
+  return result.rows as unknown as { id: number; slug: string; name: string; description: string }[]
+}
+
+async function getFeaturedBusinesses() {
+  const result = await db.execute(
+    'SELECT * FROM businesses WHERE featured = 1 ORDER BY rating DESC LIMIT 6'
+  )
+  return result.rows as unknown as {
+    slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
+    rating: number; reviews_count: number; phone: string; verified: number; featured: number
+  }[]
+}
+
+async function getTopRated() {
+  const result = await db.execute(
+    'SELECT * FROM businesses ORDER BY rating DESC, reviews_count DESC LIMIT 6'
+  )
+  return result.rows as unknown as {
+    slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
+    rating: number; reviews_count: number; phone: string; verified: number; featured: number
+  }[]
+}
+
+export default async function HomePage() {
+  const [categories, featured, topRated] = await Promise.all([
+    getCategories(), getFeaturedBusinesses(), getTopRated(),
+  ])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <section className="bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
+              Find Local Businesses Near You
+            </h1>
+            <p className="text-brand-100 text-lg mb-8">
+              Discover trusted local services, restaurants, shops and professionals in your city.
+            </p>
+            <SearchBar />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section className="py-12 bg-white border-b border-surface-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {categories.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/search?category=${cat.slug}`}
+                className="text-center p-4 rounded-xl border border-surface-200 hover:border-brand-300 hover:bg-brand-50 transition-all"
+              >
+                <Building2 className="w-6 h-6 text-brand-600 mx-auto mb-2" />
+                <span className="text-sm font-medium text-surface-700">{cat.name}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {featured.length > 0 && (
+        <section className="py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-surface-900">Featured Businesses</h2>
+                <p className="text-surface-500 mt-1">Top-rated businesses in your area</p>
+              </div>
+              <Star className="w-8 h-8 text-amber-400" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featured.map((biz) => (
+                <BusinessCard
+                  key={biz.slug}
+                  slug={biz.slug}
+                  name={biz.name}
+                  category={biz.category_slug}
+                  city={biz.city}
+                  area={biz.area}
+                  district={biz.district}
+                  state={biz.state}
+                  rating={biz.rating}
+                  reviewsCount={biz.reviews_count}
+                  phone={biz.phone}
+                  verified={Boolean(biz.verified)}
+                  featured={Boolean(biz.featured)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-surface-900">Top Rated</h2>
+              <p className="text-surface-500 mt-1">Highest rated businesses across all cities</p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-brand-600" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {topRated.map((biz) => (
+              <BusinessCard
+                key={biz.slug}
+                slug={biz.slug}
+                name={biz.name}
+                category={biz.category_slug}
+                city={biz.city}
+                area={biz.area}
+                district={biz.district}
+                state={biz.state}
+                rating={biz.rating}
+                reviewsCount={biz.reviews_count}
+                phone={biz.phone}
+                verified={Boolean(biz.verified)}
+                featured={Boolean(biz.featured)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-surface-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold text-center text-surface-900 mb-12">Why LOCObiz?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-6 h-6 text-brand-600" />
+              </div>
+              <h3 className="font-semibold text-surface-900 mb-2">Verified Listings</h3>
+              <p className="text-surface-500 text-sm">Every business is verified to ensure authentic information.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Star className="w-6 h-6 text-brand-600" />
+              </div>
+              <h3 className="font-semibold text-surface-900 mb-2">Real Reviews</h3>
+              <p className="text-surface-500 text-sm">Genuine ratings and reviews from real customers.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-brand-600" />
+              </div>
+              <h3 className="font-semibold text-surface-900 mb-2">Free & Open</h3>
+              <p className="text-surface-500 text-sm">List your business for free and reach local customers.</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-  );
+  )
 }

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 420px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fc; color: #1e293b; }
+    .header { background: #4f46e5; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+    .header h1 { font-size: 15px; font-weight: 700; }
+    .header span { font-size: 11px; opacity: 0.8; }
+    .body { padding: 12px 16px; }
+    .status { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #4338ca; }
+    .btn-secondary { background: #e2e8f0; color: #475569; }
+    .btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+    .info { font-size: 12px; color: #94a3b8; text-align: center; margin: 8px 0; }
+    .results { max-height: 320px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+    .result { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+    .result:last-child { border-bottom: none; }
+    .result-name { font-weight: 600; color: #1e293b; }
+    .result-meta { color: #64748b; font-size: 11px; margin-top: 2px; }
+    .result-phone { color: #4f46e5; font-size: 11px; }
+    .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #dbeafe; color: #1d4ed8; margin-left: 4px; }
+    .flex { display: flex; gap: 8px; }
+    .flex .btn { flex: 1; }
+    .settings { margin-top: 10px; padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; }
+    .settings label { display: block; color: #64748b; margin-bottom: 4px; }
+    .settings input { width: 100%; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #dc2626; font-size: 12px; margin-top: 6px; background: #fef2f2; padding: 6px 10px; border-radius: 6px; }
+    .success { color: #16a34a; font-size: 12px; margin-top: 6px; background: #f0fdf4; padding: 6px 10px; border-radius: 6px; }
+    .count { font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>LOCObiz Scraper</h1>
+      <span>Google Maps → LOCObiz</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <div id="status" class="status">Open Google Maps search results to begin</div>
+
+    <button id="scrapeBtn" class="btn btn-primary">Scrape this page</button>
+
+    <div id="count" class="count" style="display:none"></div>
+
+    <div id="resultsContainer" class="results" style="display:none"></div>
+
+    <div id="cityRow" style="display:none; margin-top:8px;">
+      <input type="text" id="cityInput" placeholder="City (e.g. Mumbai)" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:12px;" />
+    </div>
+
+    <div id="actions" style="display:none" class="flex" style="margin-top:8px; gap: 8px;">
+      <button id="sendBtn" class="btn btn-success">Send to LOCObiz</button>
+      <button id="resetBtn" class="btn btn-secondary">Clear</button>
+    </div>
+
+    <div id="message" style="margin-top:8px"></div>
+
+    <div class="settings">
+      <label>LOCObiz Server URL</label>
+      <input type="text" id="serverUrl" placeholder="http://localhost:3000" />
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

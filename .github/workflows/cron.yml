@@ -1,0 +1,22 @@
+name: Daily Cron Tasks
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-rankings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: curl -X POST ${{ secrets.APP_URL }}/api/ranking
+      - run: curl -X POST ${{ secrets.APP_URL }}/api/revalidate \
+          -H 'Content-Type: application/json' \
+          -H 'Cookie: token=${{ secrets.ADMIN_TOKEN }}' \
+          -d '{"tag":"businesses"}'
