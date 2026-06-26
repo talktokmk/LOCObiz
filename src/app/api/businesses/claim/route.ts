@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { generateClaimToken } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,12 +21,6 @@ export async function POST(request: NextRequest) {
     if (business.claimed) {
       return NextResponse.json({ error: 'Business already claimed' }, { status: 409 })
     }
-
-    const token = generateClaimToken()
-    await db.execute({
-      sql: "UPDATE businesses SET claim_token = ?, claimed = 1 WHERE id = ?",
-      args: [token, business.id],
-    })
 
     await db.execute({
       sql: "INSERT INTO leads (business_id, name, phone, message, source) VALUES (?, ?, ?, ?, 'claim')",
