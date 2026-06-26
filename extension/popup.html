@@ -21,6 +21,7 @@
     .btn-danger { background: #dc2626; color: white; }
     .btn-danger:hover:not(:disabled) { background: #b91c1c; }
     .info { font-size: 12px; color: #94a3b8; text-align: center; margin: 8px 0; }
+    .status a { color: #4f46e5; text-decoration: underline; cursor: pointer; }
     .results { max-height: 320px; overflow-y: auto; margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
     .result { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
     .result:last-child { border-bottom: none; }
@@ -36,6 +37,7 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .error { color: #dc2626; font-size: 12px; margin-top: 6px; background: #fef2f2; padding: 6px 10px; border-radius: 6px; }
+    .warn { color: #b45309; font-size: 12px; margin-top: 6px; background: #fffbeb; padding: 6px 10px; border-radius: 6px; }
     .success { color: #16a34a; font-size: 12px; margin-top: 6px; background: #f0fdf4; padding: 6px 10px; border-radius: 6px; }
     .count { font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 8px; }
   </style>
@@ -61,7 +63,7 @@
       <input type="text" id="cityInput" placeholder="City (e.g. Mumbai)" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:12px;" />
     </div>
 
-    <div id="actions" style="display:none" class="flex" style="margin-top:8px; gap: 8px;">
+    <div id="actions" class="flex" style="display:none; margin-top:8px; gap:8px;">
       <button id="sendBtn" class="btn btn-success">Send to ADZBE</button>
       <button id="resetBtn" class="btn btn-secondary">Clear</button>
     </div>

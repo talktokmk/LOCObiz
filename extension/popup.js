@@ -50,6 +50,20 @@ async function checkTab() {
     scrapeBtn.disabled = true
     return false
   }
+
+  // Verify content script is injected (extension loaded into the page)
+  try {
+    await withTimeout(chrome.tabs.sendMessage(tab.id, { action: 'ping' }), 3000)
+  } catch {
+    statusEl.innerHTML = 'Extension not active on this page. <a href="#" id="reloadPage">Refresh Google Maps</a> to inject the scraper.'
+    scrapeBtn.disabled = true
+    document.getElementById('reloadPage')?.addEventListener('click', (e) => {
+      e.preventDefault()
+      chrome.tabs.reload(tab.id)
+    })
+    return false
+  }
+
   // Auto-detect city from URL if not set
   if (!cityInput.value) {
     const detected = extractCityFromUrl(tab.url)
@@ -58,6 +72,13 @@ async function checkTab() {
   statusEl.textContent = 'Ready. Click "Scrape this page" to extract businesses.'
   scrapeBtn.disabled = false
   return true
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+  ])
 }
 
 checkTab()
@@ -83,14 +104,24 @@ scrapeBtn.addEventListener('click', async () => {
       if (response.pageInfo?.detectedCity && !cityInput.value) {
         cityInput.value = response.pageInfo.detectedCity
       }
+      if (response.note) {
+        messageEl.innerHTML = `<div class="warn">${response.note} — some data may be missing. Try scrolling manually then scrape again.</div>`
+      }
     } else {
       // Fallback to simple scrape
       const fallback = await chrome.tabs.sendMessage(tab.id, { action: 'scrape' })
       scrapedBusinesses = fallback?.businesses || []
       displayResults(scrapedBusinesses)
     }
-  } catch {
-    messageEl.innerHTML = `<div class="error">Error: could not access page. Try refreshing Google Maps.</div>`
+  } catch (e) {
+    const msg = e.message || ''
+    if (msg.includes('Receiving end does not exist')) {
+      messageEl.innerHTML = `<div class="error">Extension not active on this page. Please refresh Google Maps and try again. Make sure you are on <b>www.google.com/maps</b>.</div>`
+    } else if (msg.includes('timeout')) {
+      messageEl.innerHTML = `<div class="error">Timed out waiting for page. Try refreshing Google Maps, or scrape when fewer results are loaded.</div>`
+    } else {
+      messageEl.innerHTML = `<div class="error">Could not access page. Go to <b>www.google.com/maps</b>, search for a business type (e.g. "restaurants in Mumbai"), then try again.</div>`
+    }
   }
 
   scrapeBtn.innerHTML = 'Scrape this page'
@@ -118,6 +149,7 @@ function displayResults(businesses) {
       <div class="result-meta">${b.address || ''}${b.category ? ' <span class="badge">' + escapeHtml(b.category) + '</span>' : ''}</div>
       ${b.rating ? `<div class="result-meta">★ ${b.rating}${b.reviews ? ' (' + b.reviews + ' reviews)' : ''}</div>` : ''}
       ${b.phone ? `<div class="result-phone">${escapeHtml(b.phone)}</div>` : ''}
+      ${b.whatsapp ? `<div class="result-phone" style="color:#25D366">WhatsApp: ${escapeHtml(b.whatsapp)}</div>` : ''}
       ${b.website ? `<div class="result-phone" style="color:#16a34a">${escapeHtml(b.website)}</div>` : ''}
       ${b.openingHours ? `<div class="result-meta" style="color:#9333ea">${escapeHtml(b.openingHours.slice(0, 80))}</div>` : ''}
     `
@@ -146,11 +178,24 @@ sendBtn.addEventListener('click', async () => {
     sendBtn.disabled = false
 
     if (response?.success) {
-      messageEl.innerHTML = `<div class="success">✓ ${response.result.inserted || scrapedBusinesses.length} businesses imported to ADZBE!</div>`
-      scrapedBusinesses = []
-      resultsContainer.style.display = 'none'
-      countEl.style.display = 'none'
-      actionsEl.style.display = 'none'
+      const inserted = response.result?.inserted ?? 0
+      const skipped = response.result?.skipped ?? 0
+      const errors = response.result?.errors || []
+      let detail = ''
+      if (errors.length > 0) {
+        detail = '<div style="margin-top:6px;font-size:11px;color:#6b7280;max-height:80px;overflow-y:auto">' +
+          errors.slice(0, 5).map(e => escapeHtml(e)).join('<br>') +
+          (errors.length > 5 ? `<br>...and ${errors.length - 5} more` : '') + '</div>'
+      }
+      if (inserted > 0) {
+        messageEl.innerHTML = `<div class="success">✓ ${inserted} imported${skipped > 0 ? `, ${skipped} skipped` : ''}</div>${detail}`
+        scrapedBusinesses = []
+        resultsContainer.style.display = 'none'
+        countEl.style.display = 'none'
+        actionsEl.style.display = 'none'
+      } else {
+        messageEl.innerHTML = `<div class="warn">⚠ 0 imported. ${skipped} skipped.</div>${detail || '<div style="margin-top:6px;font-size:11px;color:#6b7280">Most common: no category detected or duplicate place_id/phone.</div>'}`
+      }
     } else {
       messageEl.innerHTML = `<div class="error">✗ ${response?.error || 'Failed to send. Check your server URL.'}</div>`
     }

@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { Star, MapPin, Phone, Globe, Clock, CheckCircle, MessageCircle, ChevronRight, TrendingUp, Shield, Zap, HelpCircle } from 'lucide-react'
 import { LocalBusinessJsonLd, BreadcrumbJsonLd, FAQJsonLd } from '@/components/JsonLd'
 import TrackedWaButton from '@/components/TrackedWaButton'
+import { findWaNumber } from '@/lib/utils'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -75,8 +76,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
 
   await db.execute({ sql: 'UPDATE businesses SET views = views + 1 WHERE id = ?', args: [biz.id] })
 
-  const services = biz.services ? JSON.parse(biz.services) : []
-  const waNumber = (biz.whatsapp || biz.phone || '').replace(/[^0-9]/g, '')
+  let services: string[] = []
+  try {
+    services = biz.services ? JSON.parse(biz.services) : []
+  } catch { services = [] }
+  const waNumber = findWaNumber(biz.whatsapp, biz.phone, biz.address, biz.website)
   const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`
 
   const breadcrumbs = [
@@ -163,23 +167,27 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
               )}
             </div>
 
-            <TrackedWaButton
-              href={waUrl}
-              businessId={biz.id}
-              phone={waNumber}
-              businessName={biz.name}
-              label="Chat on WhatsApp Now"
-              size="lg"
-              pulse
-              fullWidth
-            />
-            <p className="text-center text-sm text-surface-400 flex items-center justify-center gap-1 mt-3">
-              <Zap className="w-4 h-4 text-green-500" /> Usually responds within a few minutes
-            </p>
+            {waNumber && (
+              <>
+                <TrackedWaButton
+                  href={waUrl}
+                  businessId={biz.id}
+                  phone={waNumber}
+                  businessName={biz.name}
+                  label="Chat on WhatsApp Now"
+                  size="lg"
+                  pulse
+                  fullWidth
+                />
+                <p className="text-center text-sm text-surface-400 flex items-center justify-center gap-1 mt-3">
+                  <Zap className="w-4 h-4 text-green-500" /> Usually responds within a few minutes
+                </p>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-4 animate-slide-up">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 animate-slide-up">
           <div className="bg-white rounded-xl border border-surface-200 p-4 text-center">
             <MessageCircle className="w-6 h-6 text-whatsapp mx-auto mb-1.5" />
             <h3 className="font-semibold text-xs text-surface-900">Instant Connect</h3>
@@ -201,7 +209,10 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
           <div className="grid grid-cols-1 gap-3 text-sm">
             <div className="flex items-center gap-3 text-surface-600">
               <Phone className="w-4 h-4 text-whatsapp shrink-0" />
-              <span>{biz.phone}</span>
+              <span>{biz.whatsapp || biz.phone || 'Not listed'}</span>
+              {biz.whatsapp && biz.phone && biz.whatsapp !== biz.phone && (
+                <span className="text-[10px] bg-whatsapp/10 text-whatsapp px-1.5 py-0.5 rounded-full font-medium">WhatsApp</span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-surface-600">
               <MapPin className="w-4 h-4 text-whatsapp shrink-0" />
@@ -315,49 +326,55 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
               </details>
             ))}
           </div>
-          <div className="mt-4 text-center">
+          {waNumber && (
+            <div className="mt-4 text-center">
+              <TrackedWaButton
+                href={waUrl}
+                businessId={biz.id}
+                phone={waNumber}
+                businessName={biz.name}
+                label="Ask more questions on WhatsApp"
+                size="sm"
+                fullWidth={false}
+                className="inline-flex w-auto px-6"
+              />
+            </div>
+          )}
+        </div>
+
+        {waNumber && (
+          <div className="bg-gradient-to-br from-whatsapp/10 to-whatsapp/5 rounded-2xl border border-whatsapp/20 p-6 md:p-8 text-center">
+            <h2 className="text-xl font-bold text-surface-900 mb-2">Need help right now?</h2>
+            <p className="text-surface-600 mb-5">Chat directly with {biz.name} on WhatsApp — get a response in minutes.</p>
             <TrackedWaButton
               href={waUrl}
               businessId={biz.id}
               phone={waNumber}
               businessName={biz.name}
-              label="Ask more questions on WhatsApp"
-              size="sm"
+              label="Chat on WhatsApp Now"
+              size="md"
+              pulse
               fullWidth={false}
-              className="inline-flex w-auto px-6"
+              className="inline-flex w-auto px-8"
             />
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="bg-gradient-to-br from-whatsapp/10 to-whatsapp/5 rounded-2xl border border-whatsapp/20 p-6 md:p-8 text-center">
-          <h2 className="text-xl font-bold text-surface-900 mb-2">Need help right now?</h2>
-          <p className="text-surface-600 mb-5">Chat directly with {biz.name} on WhatsApp — get a response in minutes.</p>
+      {waNumber && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-surface-200 p-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <TrackedWaButton
             href={waUrl}
             businessId={biz.id}
             phone={waNumber}
             businessName={biz.name}
-            label="Chat on WhatsApp Now"
+            label="Chat on WhatsApp"
             size="md"
             pulse
-            fullWidth={false}
-            className="inline-flex w-auto px-8"
+            fullWidth
           />
         </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-surface-200 p-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-        <TrackedWaButton
-          href={waUrl}
-          businessId={biz.id}
-          phone={waNumber}
-          businessName={biz.name}
-          label="Chat on WhatsApp"
-          size="md"
-          pulse
-          fullWidth
-        />
-      </div>
+      )}
     </>
   )
 }

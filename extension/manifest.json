@@ -6,6 +6,7 @@
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://www.google.com/maps/*",
+    "https://maps.google.com/*",
     "http://localhost:3000/*",
     "https://*.vercel.app/*",
     "https://adzbe.cloud/*"
@@ -16,8 +17,9 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.google.com/maps/*"],
-      "js": ["content.js"]
+      "matches": ["https://www.google.com/maps/*", "https://maps.google.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ],
   "background": {

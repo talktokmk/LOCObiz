@@ -107,4 +107,7 @@ export async function initDb() {
   try { await db.execute("UPDATE businesses SET is_scraped = 1, source = 'api' WHERE place_id IS NOT NULL AND place_id != '' AND is_scraped = 0") } catch {}
   // Approve all pending businesses that have a place_id (scraped data should not stay pending)
   try { await db.execute("UPDATE businesses SET status = 'approved' WHERE place_id IS NOT NULL AND place_id != '' AND status = 'pending'") } catch {}
+
+  // Seed fallback category for uncategorized scraped businesses
+  try { await db.execute("INSERT OR IGNORE INTO categories (slug, name, description) VALUES ('local-services', 'Local Services', 'Local service providers near you. Connect instantly on WhatsApp.')") } catch {}
 }

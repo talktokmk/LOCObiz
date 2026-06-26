@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import BusinessCard from '@/components/BusinessCard'
 import { BreadcrumbJsonLd } from '@/components/JsonLd'
+import { RANKING_SQL } from '@/lib/ranking'
 import { MessageCircle, Zap, TrendingUp, ChevronRight, Building2, MapPin } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -32,12 +33,12 @@ export default async function CategorySlugPage({ params }: { params: Promise<{ s
   if (catResult.rows.length === 0) notFound()
 
   const businessesResult = await db.execute({
-    sql: "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE category_slug = ? AND status = 'approved' ORDER BY featured DESC, created_at DESC LIMIT 50",
+    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, ${RANKING_SQL} as ranking_score FROM businesses WHERE category_slug = ? AND status = 'approved' ORDER BY ranking_score DESC LIMIT 50`,
     args: [slug],
   })
   const businesses = businessesResult.rows as unknown as {
     slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
-    rating: number; reviews_count: number; phone: string; address: string; verified: number; featured: number
+    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; ranking_score: number
   }[]
 
   const cities = [...new Set(businesses.map((b) => b.city))]
@@ -112,10 +113,12 @@ export default async function CategorySlugPage({ params }: { params: Promise<{ s
                     rating={biz.rating}
                     reviewsCount={biz.reviews_count}
                     phone={biz.phone}
+                    whatsapp={biz.whatsapp}
                     address={biz.address}
                     verified={Boolean(biz.verified)}
                     featured={Boolean(biz.featured)}
                     rank={i + 1}
+                    rankingScore={biz.ranking_score}
                   />
                 ))}
               </div>

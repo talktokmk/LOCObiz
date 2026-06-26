@@ -84,12 +84,12 @@ export default function SearchBar({ initialQuery = '', initialCity = '', large =
           <button
             type="button"
             onClick={() => setShowCities(!showCities)}
-            className={`flex items-center gap-2 px-4 border border-surface-300 rounded-xl text-surface-600 hover:border-surface-400 transition-colors whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1 px-2 sm:px-4 border border-surface-300 rounded-xl text-surface-600 hover:border-surface-400 transition-colors whitespace-nowrap ${
               large ? 'h-14' : 'h-11 text-sm'
             }`}
           >
             <MapPin className={large ? 'w-5 h-5' : 'w-4 h-4'} />
-            <span>{city || 'City'}</span>
+            <span className="hidden sm:inline">{city || 'City'}</span>
           </button>
           {showCities && (
             <div className="absolute top-full mt-1 right-0 w-48 bg-white border border-surface-200 rounded-xl shadow-lg z-50 p-2 max-h-60 overflow-y-auto">
@@ -119,11 +119,12 @@ export default function SearchBar({ initialQuery = '', initialCity = '', large =
 
         <button
           type="submit"
-          className={`inline-flex items-center justify-center px-6 bg-whatsapp text-white font-semibold rounded-xl hover:bg-whatsapp-dark transition-colors ${
+          className={`inline-flex items-center justify-center px-3 sm:px-6 bg-whatsapp text-white font-semibold rounded-xl hover:bg-whatsapp-dark transition-colors ${
             large ? 'h-14 text-base' : 'h-11 text-sm'
           }`}
         >
-          Search
+          <Search className="sm:hidden w-4 h-4" />
+          <span className="hidden sm:inline">Search</span>
         </button>
       </div>
     </form>

@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { Star, MapPin, MessageCircle, CheckCircle, TrendingUp, Zap } from 'lucide-react'
+import { Star, MapPin, MessageCircle, CheckCircle, TrendingUp, Zap, Sparkles } from 'lucide-react'
+import { getRankLevel } from '@/lib/ranking'
+import { findWaNumber } from '@/lib/utils'
 
 interface BusinessCardProps {
   slug: string
@@ -12,17 +14,20 @@ interface BusinessCardProps {
   rating?: number
   reviewsCount?: number
   phone?: string
+  whatsapp?: string
   address?: string
   verified?: boolean
   featured?: boolean
   rank?: number
+  rankingScore?: number
 }
 
 export default function BusinessCard({
-  slug, name, category, city, area, rating, reviewsCount, phone, address, verified, rank,
+  slug, name, category, city, area, rating, reviewsCount, phone, whatsapp, address, verified, rank, rankingScore,
 }: BusinessCardProps) {
-  const waNumber = phone?.replace(/[^0-9]/g, '') || ''
+  const waNumber = findWaNumber(whatsapp, phone, address)
   const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`
+  const rankLevel = rankingScore !== undefined ? getRankLevel(rankingScore) : null
 
   return (
     <div className="bg-white rounded-xl border border-surface-200 hover:border-whatsapp/40 hover:shadow-lg hover:shadow-whatsapp/10 transition-all duration-300 animate-fade-in overflow-hidden">
@@ -38,6 +43,11 @@ export default function BusinessCard({
             }`}>
               {rank === 1 ? <TrendingUp className="w-3 h-3" /> : null}
               #{rank} in {city}
+            </span>
+          )}
+          {rankLevel && (
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium rounded-full ${rankLevel.color}`}>
+              <Sparkles className="w-3 h-3" /> {rankLevel.label}
             </span>
           )}
           {Boolean(verified) && (
@@ -76,15 +86,17 @@ export default function BusinessCard({
           </div>
         )}
 
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full inline-flex items-center justify-center gap-2.5 px-4 py-3.5 bg-whatsapp text-white font-bold text-base rounded-xl hover:bg-whatsapp-dark hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-whatsapp/20"
-        >
-          <MessageCircle className="w-5 h-5" />
-          Chat on WhatsApp
-        </a>
+        {waNumber && (
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2.5 px-4 py-3.5 bg-whatsapp text-white font-bold text-base rounded-xl hover:bg-whatsapp-dark hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-whatsapp/20"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Chat on WhatsApp
+          </a>
+        )}
 
         <div className="flex items-center justify-between mt-3">
           <span className="text-[11px] text-surface-400 capitalize">{category.replace(/-/g, ' ')}</span>

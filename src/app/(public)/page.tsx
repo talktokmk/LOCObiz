@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic'
 import SearchBar from '@/components/SearchBar'
 import EmailCapture from '@/components/EmailCapture'
 import { WebsiteJsonLd } from '@/components/JsonLd'
-import { TrendingUp, Zap, MessageCircle, ArrowRight, Building2, Search, Smartphone, Star, ChevronRight } from 'lucide-react'
+import { RANKING_SQL, getRankLevel } from '@/lib/ranking'
+import { findWaNumber } from '@/lib/utils'
+import { TrendingUp, Zap, MessageCircle, Sparkles, ArrowRight, Building2, Search, Smartphone, Star, ChevronRight } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'ADZBE | Find Local Businesses & Connect on WhatsApp',
@@ -24,7 +26,7 @@ export default async function HomePage() {
   let trending: { category_slug: string; count: number }[] = []
   let topBusinesses: {
     slug: string; name: string; category_slug: string; city: string; area: string; rating: number
-    reviews_count: number; phone: string; verified: number
+    reviews_count: number; phone: string; whatsapp: string; address: string; website: string; verified: number; ranking_score: number
   }[] = []
   let totalBiz = 0
   let totalCities = 0
@@ -36,7 +38,7 @@ export default async function HomePage() {
         "SELECT category_slug, COUNT(*) as count FROM businesses WHERE category_slug IS NOT NULL AND status = 'approved' GROUP BY category_slug ORDER BY count DESC LIMIT 8"
       ),
       db.execute(
-        "SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, verified FROM businesses WHERE status = 'approved' ORDER BY whatsapp_clicks DESC, rating DESC, reviews_count DESC LIMIT 3"
+        `SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, whatsapp, address, website, verified, ${RANKING_SQL} as ranking_score FROM businesses WHERE status = 'approved' ORDER BY ranking_score DESC LIMIT 3`
       ),
       db.execute(
         "SELECT COUNT(*) as biz_count, COUNT(DISTINCT city) as city_count, COALESCE(SUM(whatsapp_clicks), 0) as wa_total FROM businesses WHERE status = 'approved'"
@@ -161,12 +163,16 @@ export default async function HomePage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {topBusinesses.map((biz, i) => {
-                const wa = (biz.phone || '').replace(/[^0-9]/g, '')
+                const wa = findWaNumber(biz.whatsapp, biz.phone, biz.address, biz.website)
+                const level = getRankLevel(biz.ranking_score)
                 return (
                   <div key={biz.slug} className="bg-white rounded-xl border border-surface-200 p-5 hover:border-whatsapp/40 hover:shadow-lg transition-all animate-fade-in">
-                    <div className="flex items-center gap-1.5 mb-3">
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold ring-1 ring-amber-300">
                         <TrendingUp className="w-3 h-3" /> #{i + 1} Top Rated
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium rounded-full ${level.color}`}>
+                        <Sparkles className="w-3 h-3" /> {level.label}
                       </span>
                       {Boolean(biz.verified) && (
                         <span className="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[11px] font-medium rounded-full">Verified</span>
@@ -174,14 +180,16 @@ export default async function HomePage() {
                     </div>
                     <h3 className="font-semibold text-surface-900 mb-1">{biz.name}</h3>
                     <p className="text-xs text-surface-400 mb-4">{biz.area}, {biz.city}</p>
-                    <a
-                      href={`https://wa.me/${wa}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-whatsapp text-white font-semibold text-sm rounded-xl hover:bg-whatsapp-dark transition-all shadow-md shadow-whatsapp/20"
-                    >
-                      <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
-                    </a>
+                    {wa && (
+                      <a
+                        href={`https://wa.me/${wa}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-whatsapp text-white font-semibold text-sm rounded-xl hover:bg-whatsapp-dark transition-all shadow-md shadow-whatsapp/20"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Chat on WhatsApp
+                      </a>
+                    )}
                   </div>
                 )
               })}

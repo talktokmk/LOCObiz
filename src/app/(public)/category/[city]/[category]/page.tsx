@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import BusinessCard from '@/components/BusinessCard'
 import { BreadcrumbJsonLd } from '@/components/JsonLd'
+import { RANKING_SQL } from '@/lib/ranking'
 import { MessageCircle, Zap, TrendingUp, ChevronRight, Building2 } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string; category: string }> }) {
@@ -28,12 +29,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ city:
   const catName = category.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
   const businessesResult = await db.execute({
-    sql: "SELECT * FROM businesses WHERE LOWER(city) = LOWER(?) AND category_slug = ? AND status = 'approved' ORDER BY featured DESC, created_at DESC",
+    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, ${RANKING_SQL} as ranking_score FROM businesses WHERE LOWER(city) = LOWER(?) AND category_slug = ? AND status = 'approved' ORDER BY ranking_score DESC`,
     args: [city, category],
   })
   const businesses = businessesResult.rows as unknown as {
     slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
-    rating: number; reviews_count: number; phone: string; address: string; verified: number; featured: number
+    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; ranking_score: number
   }[]
 
   if (businesses.length === 0) notFound()
@@ -93,10 +94,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ city:
                 rating={biz.rating}
                 reviewsCount={biz.reviews_count}
                 phone={biz.phone}
+                whatsapp={biz.whatsapp}
                 address={biz.address}
                 verified={Boolean(biz.verified)}
                 featured={Boolean(biz.featured)}
                 rank={i + 1}
+                rankingScore={biz.ranking_score}
               />
             ))}
           </div>

@@ -208,13 +208,41 @@ export async function POST(request: NextRequest) {
     let skipped = 0
     const errors: string[] = []
 
+    function hasValidPhone(val: string): boolean {
+      const d = val.replace(/[^0-9]/g, '')
+      return d.length >= 10 && d.length <= 15
+    }
+
     for (let i = 0; i < businesses.length; i++) {
       const b = businesses[i]
       if (!b.name || typeof b.name !== 'string') { skipped++; continue }
       const name = b.name.trim()
       if (!name) { skipped++; continue }
 
+      // Normalize fields: detect when scraper put phone numbers in wrong columns
+      const phoneRaw = (b.phone || '').trim()
+      const whatsappRaw = (b.whatsapp || '').trim()
+      const addressRaw = (b.address || '').trim()
+      const websiteRaw = (b.website || '').trim()
+
+      if (!hasValidPhone(phoneRaw) && !hasValidPhone(whatsappRaw)) {
+        // Phone fields are empty/invalid — check if address or website has a phone
+        const candidates: { val: string; field: string }[] = []
+        if (hasValidPhone(addressRaw)) candidates.push({ val: addressRaw, field: 'address' })
+        if (hasValidPhone(websiteRaw)) candidates.push({ val: websiteRaw, field: 'website' })
+        if (candidates.length > 0) {
+          b.phone = candidates[0].val
+          b.whatsapp = candidates.length > 1 ? candidates[1].val : candidates[0].val
+          // Remove the phone from the original field so address/website don't get polluted
+          if (candidates[0].field === 'address') b.address = b.phone === phoneRaw ? '' : addressRaw
+          else if (candidates[0].field === 'website') b.website = b.phone === websiteRaw ? '' : websiteRaw
+          if (candidates.length > 1 && candidates[1].field === 'address') b.address = ''
+          else if (candidates.length > 1 && candidates[1].field === 'website') b.website = ''
+        }
+      }
+
       const phone = b.phone || ''
+      const whatsapp = b.whatsapp || ''
       const placeId = b.placeId || ''
 
       // Dedup by place_id (strongest) or phone
@@ -234,25 +262,33 @@ export async function POST(request: NextRequest) {
 
       const catRaw = b.category || ''
       const googleTypes = b.types as string[] | undefined
-      let catSlug = detectCategoryFromTypes(googleTypes || []) || detectCategoryFromName(name) || mapCategory(catRaw, catNames)
 
-      // If still no match, auto-create from Google types
-      if (!catSlug || !catMap.has(catSlug)) {
-        const rawTypes = b.types as string[] | undefined
-        if (catSlug && !catMap.has(catSlug)) {
-          const newId = await ensureCategoryExists(db, catSlug)
-          if (newId) { catMap.set(catSlug, newId) }
-        }
-        if ((!catSlug || !catMap.has(catSlug)) && rawTypes && rawTypes.length > 0) {
-          catSlug = rawTypes[0].replace(/_/g, '-').toLowerCase()
-          const newId = await ensureCategoryExists(db, catSlug)
-          if (newId) { catMap.set(catSlug, newId) }
-        }
+      // Try to derive a Google type from scraped category text
+      const derivedTypes: string[] = []
+      if (catRaw) {
+        const asType = catRaw.toLowerCase().replace(/[\s-]+/g, '_')
+        if (!derivedTypes.includes(asType)) derivedTypes.push(asType)
+      }
+      const allTypes = [...(googleTypes || []), ...derivedTypes]
+
+      let catSlug = detectCategoryFromTypes(allTypes) || detectCategoryFromName(name) || detectCategoryFromName(catRaw) || mapCategory(catRaw, catNames)
+
+      // Auto-create category if slug exists but not in DB
+      if (catSlug && !catMap.has(catSlug)) {
+        const newId = await ensureCategoryExists(db, catSlug)
+        if (newId) { catMap.set(catSlug, newId) }
       }
 
+      // Try creating from any Google type
+      if ((!catSlug || !catMap.has(catSlug)) && googleTypes && googleTypes.length > 0) {
+        catSlug = googleTypes[0].replace(/_/g, '-').toLowerCase()
+        const newId = await ensureCategoryExists(db, catSlug)
+        if (newId) { catMap.set(catSlug, newId) }
+      }
+
+      // Try creating from raw category text
       if (!catSlug || !catMap.has(catSlug)) {
-        // Try creating from raw category text
-        if (catRaw && !/restaurant|cafe|food|dining|bakery|bistro|hotel|eatery|mess|tiffin|snacks|fast food|sweets|ice cream/i.test(catRaw)) {
+        if (catRaw) {
           const newSlug = slugify(catRaw)
           if (newSlug && !catMap.has(newSlug)) {
             const displayName = catRaw.replace(/\b\w/g, (c: string) => c.toUpperCase())
@@ -276,6 +312,23 @@ export async function POST(request: NextRequest) {
             catSlug = newSlug
           }
         }
+      }
+
+      // Final fallback: assign to "local-services" so no business is lost
+      if (!catSlug || !catMap.has(catSlug)) {
+        if (catMap.has('local-services')) {
+          catSlug = 'local-services'
+        } else {
+          // Try to find any existing category
+          const firstCat = catMap.keys().next().value as string | undefined
+          if (firstCat) {
+            catSlug = firstCat
+          } else {
+            // Create local-services category
+            const newId = await ensureCategoryExists(db, 'local-services', 'Local Services')
+            if (newId) { catMap.set('local-services', newId); catSlug = 'local-services' }
+          }
+        }
         if (!catSlug || !catMap.has(catSlug)) { skipped++; continue }
       }
       const catId = catMap.get(catSlug)
@@ -291,8 +344,8 @@ export async function POST(request: NextRequest) {
       try {
         await db.execute({
           sql: `INSERT OR IGNORE INTO businesses
-                (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, place_id, opening_hours, description, services, rating, reviews_count, verified, views, status, is_scraped, source)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1, 'extension')`,
+                (name, slug, category_id, category_slug, city, district, state, area, address, phone, whatsapp, website, place_id, opening_hours, description, services, rating, reviews_count, verified, views, status, is_scraped, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1, 'extension')`,
           args: [
             name, slug, catId, catSlug,
             parsed.city || normalizedDefault,
@@ -300,7 +353,7 @@ export async function POST(request: NextRequest) {
             parsed.stateSlug || null,
             parsed.area || null,
             address,
-            phone, website, placeId, openingHours,
+            phone, whatsapp, website, placeId, openingHours,
             buildSEODescription(name, catSlug, parsed.city || normalizedDefault, ''),
             '[]', 0, 0, 0, 0,
           ],

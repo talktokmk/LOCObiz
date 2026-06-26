@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { RANKING_SQL } from '@/lib/ranking'
 import SearchBar from '@/components/SearchBar'
 import BusinessCard from '@/components/BusinessCard'
 import { Zap } from 'lucide-react'
@@ -34,7 +35,7 @@ export default async function SearchPage({
   const city = sp.city || ''
   const category = sp.category || ''
 
-  let sql = "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE status = 'approved'"
+  let sql = `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, ${RANKING_SQL} as ranking_score FROM businesses WHERE status = 'approved'`
   const args: (string | number)[] = []
 
   if (query) {
@@ -51,12 +52,12 @@ export default async function SearchPage({
     args.push(category)
   }
 
-  sql += ' ORDER BY featured DESC, created_at DESC LIMIT 100'
+  sql += ' ORDER BY ranking_score DESC LIMIT 100'
 
   const result = await db.execute({ sql, args })
   const businesses = result.rows as unknown as {
     slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
-    rating: number; reviews_count: number; phone: string; address: string; verified: number; featured: number
+    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; ranking_score: number
   }[]
 
   let searchSummary = 'all services'
@@ -97,10 +98,12 @@ export default async function SearchPage({
                   rating={biz.rating}
                   reviewsCount={biz.reviews_count}
                   phone={biz.phone}
+                  whatsapp={biz.whatsapp}
                   address={biz.address}
                   verified={Boolean(biz.verified)}
                   featured={Boolean(biz.featured)}
                   rank={i + 1}
+                  rankingScore={biz.ranking_score}
                 />
               ))}
             </div>

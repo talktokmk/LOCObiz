@@ -31,17 +31,29 @@ await db.execute(`CREATE TABLE IF NOT EXISTS businesses (
   slug TEXT UNIQUE NOT NULL, category_id INTEGER NOT NULL,
   category_slug TEXT NOT NULL, city TEXT NOT NULL,
   district TEXT, state TEXT, area TEXT,
-    address TEXT, phone TEXT, email TEXT, website TEXT, whatsapp TEXT,
-    place_id TEXT, description TEXT, services TEXT, rating REAL DEFAULT 0,
+  address TEXT, phone TEXT, email TEXT, website TEXT, whatsapp TEXT,
+  place_id TEXT, description TEXT, services TEXT, rating REAL DEFAULT 0,
   reviews_count INTEGER DEFAULT 0, price_range TEXT, opening_hours TEXT,
   latitude REAL, longitude REAL, image_url TEXT, images TEXT,
-    featured INTEGER DEFAULT 0, verified INTEGER DEFAULT 0,
-    claimed INTEGER DEFAULT 0, claim_token TEXT, upvotes INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'approved',
+  featured INTEGER DEFAULT 0, verified INTEGER DEFAULT 0,
+  claimed INTEGER DEFAULT 0, claim_token TEXT, upvotes INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'approved',
   views INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
+  is_scraped INTEGER DEFAULT 0, source TEXT DEFAULT 'manual',
   FOREIGN KEY (category_id) REFERENCES categories(id)
 )`)
+
+// Migration: add columns that may be missing on existing databases
+try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_description TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN claimed_by TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGER DEFAULT 0") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN is_scraped INTEGER DEFAULT 0") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN source TEXT DEFAULT 'manual'") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN opening_hours TEXT") } catch {}
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id)") } catch {}
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_is_scraped ON businesses(is_scraped)") } catch {}
 
 await db.execute(`CREATE TABLE IF NOT EXISTS leads (
   id INTEGER PRIMARY KEY AUTOINCREMENT, business_id INTEGER NOT NULL,
@@ -90,6 +102,9 @@ try { await db.execute("ALTER TABLE businesses ADD COLUMN claimed_by TEXT") } ca
 try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGER DEFAULT 0") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'approved'") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN place_id TEXT") } catch {}
+
+// Seed default categories
+try { await db.execute("INSERT OR IGNORE INTO categories (slug, name, description) VALUES ('local-services', 'Local Services', 'Local service providers near you. Connect instantly on WhatsApp.')") } catch {}
 
 console.log('Database initialized successfully')
 db.close()

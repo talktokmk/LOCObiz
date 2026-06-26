@@ -1,5 +1,11 @@
-// ADZBE Scraper - Google Maps Content Script v2
+// ADZBE Scraper - Google Maps Content Script v5
 // Extracts business data including phone, address, website, rating, and place ID
+
+function isPhoneValue(str) {
+  if (!str || typeof str !== 'string') return false
+  const digits = str.replace(/[^0-9]/g, '')
+  return digits.length >= 10 && digits.length <= 15
+}
 
 function extractName(el) {
   const selectors = [
@@ -35,40 +41,96 @@ function extractAddress(el) {
   ]
   for (const sel of selectors) {
     const f = el.querySelector(sel)
-    if (f && f.textContent.trim()) return f.textContent.trim()
+    if (f) {
+      const val = f.textContent.trim()
+      // Skip results that look like phone numbers instead of addresses
+      if (val && !isPhoneValue(val)) return val
+    }
   }
   return null
 }
 
 function extractPhone(el) {
   const telLink = el.querySelector('a[href^="tel:"]')
-  if (telLink) return telLink.getAttribute('href').replace('tel:', '')
+  if (telLink) {
+    const val = telLink.getAttribute('href').replace('tel:', '')
+    if (isPhoneValue(val)) return val
+  }
 
   const buttons = el.querySelectorAll('button, [role="button"], a')
   for (const btn of buttons) {
     const text = btn.textContent || ''
     const href = btn.getAttribute('href') || ''
-    if (href.startsWith('tel:')) return href.replace('tel:', '')
+    if (href.startsWith('tel:')) {
+      const val = href.replace('tel:', '')
+      if (isPhoneValue(val)) return val
+    }
     const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}/)
-    if (phoneMatch) return phoneMatch[0].trim()
+    if (phoneMatch && isPhoneValue(phoneMatch[0])) return phoneMatch[0].trim()
   }
 
   const allText = el.innerText || ''
   const phoneMatch = allText.match(/(?:\+?91[\s-]?)?\(?[0-9]{3}\)?[\s.-]?[0-9]{3}[\s.-]?[0-9]{4,6}/g)
-  if (phoneMatch) return phoneMatch[0].trim()
+  if (phoneMatch) {
+    for (const m of phoneMatch) {
+      if (isPhoneValue(m)) return m.trim()
+    }
+  }
 
   return null
+}
+
+function extractWhatsapp(el) {
+  // Look for wa.me links
+  const waLinks = el.querySelectorAll('a[href*="wa.me"]')
+  for (const a of waLinks) {
+    const href = a.getAttribute('href') || ''
+    const m = href.match(/wa\.me\/(\d+)/)
+    if (m && isPhoneValue(m[1])) return m[1]
+  }
+
+  // Look for elements with WhatsApp icon or label
+  const all = el.querySelectorAll('button, [role="button"], a, [class*="whatsapp"], [aria-label*="whatsapp"i], [aria-label*="WhatsApp"i]')
+  for (const btn of all) {
+    const text = btn.textContent || ''
+    const href = btn.getAttribute('href') || ''
+    if (href.includes('wa.me')) {
+      const m = href.match(/wa\.me\/(\d+)/)
+      if (m && isPhoneValue(m[1])) return m[1]
+    }
+    if (/whatsapp/i.test(text)) {
+      const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}/)
+      if (phoneMatch && isPhoneValue(phoneMatch[0])) return phoneMatch[0].trim()
+    }
+  }
+
+  // Look for visible phone number next to a WhatsApp icon in the page
+  const allText = el.innerText || ''
+  const lines = allText.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (/whatsapp/i.test(lines[i])) {
+      const phoneMatch = (lines[i] + ' ' + (lines[i + 1] || '')).match(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}/)
+      if (phoneMatch && isPhoneValue(phoneMatch[0])) return phoneMatch[0].trim()
+    }
+  }
+
+  return null
+}
+
+function isUrl(str) {
+  if (!str || typeof str !== 'string') return false
+  return /^https?:\/\//i.test(str) || /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}/i.test(str)
 }
 
 function extractWebsite(el) {
   const links = el.querySelectorAll('a[href^="http"]')
   for (const a of links) {
-    if (!a.href.includes('google.com/maps') && !a.href.includes('google.co.in/maps')) return a.href
+    if (!a.href.includes('google.com/maps') && !a.href.includes('google.co.in/maps') && isUrl(a.href)) return a.href
   }
   const buttons = el.querySelectorAll('button, [role="button"]')
   for (const btn of buttons) {
     const dataUri = btn.getAttribute('data-url') || btn.getAttribute('data-href') || ''
-    if (dataUri && !dataUri.includes('google.com')) return dataUri
+    if (dataUri && !dataUri.includes('google.com') && isUrl(dataUri)) return dataUri
   }
   return null
 }
@@ -120,17 +182,18 @@ function extractOpeningHours(el) {
   return hours.length > 0 ? hours.join('; ').slice(0, 500) : ''
 }
 
-function extractBusinesses() {
+function extractBusinesses(rootEl) {
   const businesses = []
   const seen = new Set()
 
   const scrollContainer = findScrollContainer()
-  const root = scrollContainer || document.body
+  const root = rootEl || scrollContainer || document.body
 
   const containers = root.querySelectorAll(
     '[role="feed"] > div, [role="article"], .Nv2PK, .hfpxzc, ' +
     'a[href*="/maps/place/"], .section-result, [data-result-index], ' +
-    'div[data-place-id], [class*="place-card"], [class*="result"]'
+    'div[data-place-id], [class*="place-card"], [class*="result"], ' +
+    'div[jscontroller][jsaction*="pane"], [class*="listing"]'
   )
 
   for (const el of containers) {
@@ -140,8 +203,10 @@ function extractBusinesses() {
       seen.add(name.toLowerCase())
 
       const phone = extractPhone(el)
+      const whatsapp = extractWhatsapp(el)
       const address = extractAddress(el)
       const website = extractWebsite(el)
+      const placeId = extractPlaceId(el)
 
       businesses.push({
         name,
@@ -149,9 +214,11 @@ function extractBusinesses() {
         reviews: extractReviews(el),
         address,
         phone,
+        whatsapp,
         website,
         category: extractCategory(el),
-        placeId: extractPlaceId(el),
+        placeId,
+        googleMapsUrl: placeId ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}` : '',
         openingHours: extractOpeningHours(el),
         scrapedAt: new Date().toISOString(),
       })
@@ -216,7 +283,7 @@ async function scrollAllResults() {
   document.querySelectorAll('button, [role="button"]').forEach(btn => {
     const t = (btn.textContent || '').toLowerCase()
     if (t.includes('show more') || t.includes('see all') || t.includes('view all') || t.includes('load more')) {
-      try { (btn as HTMLElement).click() } catch {}
+      try { btn.click() } catch {}
     }
   })
 
@@ -236,7 +303,7 @@ async function scrollAllResults() {
     // Try scrolling any inner scrollable divs too
     const innerScrolls = container.querySelectorAll('[style*="overflow"], [class*="scroll"]')
     for (const el of innerScrolls) {
-      try { (el as HTMLElement).scrollTop = (el as HTMLElement).scrollHeight } catch {}
+      try { el.scrollTop = el.scrollHeight } catch {}
     }
 
     // Count current visible business items
@@ -257,7 +324,8 @@ async function scrollAllResults() {
 }
 
 function extractAllListingData() {
-  const businesses = extractBusinesses()
+  const container = findScrollContainer()
+  const businesses = extractBusinesses(container)
 
   const pageCity = document.title.match(/\b(in|near)\s+(\w+(?:\s+\w+)?)/i)
 
@@ -272,32 +340,56 @@ function extractAllListingData() {
   }
 }
 
+// Timeout helper to prevent hanging
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+  ])
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'scrape') {
-    const result = extractBusinesses()
-    sendResponse({ success: true, businesses: result })
-    return
-  }
-  if (request.action === 'scrollAll') {
-    scrollAllResults().then(() => {
+  try {
+    if (request.action === 'ping') {
+      sendResponse({ success: true, ready: true })
+      return
+    }
+    if (request.action === 'scrape') {
       const result = extractBusinesses()
       sendResponse({ success: true, businesses: result })
-    })
-    return true
-  }
-  if (request.action === 'scrapeFull') {
-    scrollAllResults().then(() => {
-      const result = extractAllListingData()
-      sendResponse({ success: true, ...result })
-    })
-    return true
-  }
-  if (request.action === 'getPageInfo') {
-    sendResponse({
-      url: location.href,
-      title: document.title,
-      hasResults: document.querySelectorAll('[role="feed"] > div, .Nv2PK, [data-result-index]').length > 0,
-    })
-    return
+      return
+    }
+    if (request.action === 'scrollAll') {
+      withTimeout(scrollAllResults(), 30000).then(() => {
+        const result = extractBusinesses()
+        sendResponse({ success: true, businesses: result })
+      }).catch(() => {
+        sendResponse({ success: true, businesses: extractBusinesses(), note: 'scroll timed out' })
+      })
+      return true
+    }
+    if (request.action === 'scrapeFull') {
+      withTimeout(scrollAllResults(), 30000).then(() => {
+        const result = extractAllListingData()
+        sendResponse({ success: true, ...result })
+      }).catch(() => {
+        const result = extractAllListingData()
+        sendResponse({ success: true, ...result, note: 'scroll timed out' })
+      })
+      return true
+    }
+    if (request.action === 'getPageInfo') {
+      sendResponse({
+        url: location.href,
+        title: document.title,
+        hasResults: document.querySelectorAll('[role="feed"] > div, .Nv2PK, [data-result-index]').length > 0,
+      })
+      return
+    }
+  } catch (e) {
+    sendResponse({ success: false, error: e.message })
   }
 })
+
+// Signal content script is ready
+chrome.runtime.sendMessage({ action: 'contentScriptReady' }).catch(() => {})

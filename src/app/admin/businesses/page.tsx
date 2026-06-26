@@ -45,7 +45,7 @@ export default function AdminBusinessesPage() {
 
   async function fetchBusinesses() {
     try {
-      const res = await fetch('/api/admin/businesses')
+      const res = await fetch('/api/admin/businesses?limit=5000')
       const data = res.ok ? await res.json() : []
       setBusinesses(data)
       const initEdits: Record<number, EditState> = {}
@@ -85,7 +85,11 @@ export default function AdminBusinessesPage() {
 
   async function deleteBusiness(id: number) {
     if (!confirm('Are you sure?')) return
-    await fetch(`/api/admin/businesses?id=${id}`, { method: 'DELETE' })
+    await fetch('/api/admin/businesses', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_single', id }),
+    })
     fetchBusinesses()
   }
 

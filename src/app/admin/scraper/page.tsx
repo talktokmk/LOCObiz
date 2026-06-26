@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp, List, Smartphone, CheckCircle } from 'lucide-react'
+import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp, List, Smartphone, CheckCircle, Tags } from 'lucide-react'
 import Link from 'next/link'
 
 interface ImportedBusiness {
@@ -33,12 +33,18 @@ export default function AdminScraperPage() {
   const [error, setError] = useState('')
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null)
   const [showKey, setShowKey] = useState(false)
+  // Bulk category update state
+  const [selectedBiz, setSelectedBiz] = useState<Set<number>>(new Set())
+  const [bulkCategory, setBulkCategory] = useState('')
+  const [bulkUpdating, setBulkUpdating] = useState(false)
+  const [filterNeedsCategory, setFilterNeedsCategory] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => { fetchRecent(); fetchCategories() }, [])
 
   async function fetchRecent() {
     try {
-      const res = await fetch('/api/admin/businesses?limit=20')
+      const res = await fetch(`/api/admin/businesses?limit=20&t=${Date.now()}`)
       const data = res.ok ? await res.json() : []
       setRecent(data)
     } catch { setRecent([]) }
@@ -50,8 +56,43 @@ export default function AdminScraperPage() {
       const res = await fetch('/api/categories')
       const data = res.ok ? await res.json() : []
       setCategories(data)
-      if (data.length > 0) setCategory(data[0].slug)
+      if (data.length > 0) {
+        setCategory(data[0].slug)
+        setBulkCategory(data[0].slug)
+      }
     } catch { /* ignore */ }
+  }
+
+  const filteredRecent = filterNeedsCategory
+    ? recent.filter((b) => b.category_slug === 'local-services')
+    : recent
+
+  async function handleBulkUpdate() {
+    if (selectedBiz.size === 0 || !bulkCategory) return
+    setBulkUpdating(true)
+    setError('')
+    setSuccessMsg('')
+    try {
+      const res = await fetch('/api/admin/businesses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'bulk_update_category',
+          ids: Array.from(selectedBiz),
+          category_slug: bulkCategory,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Update failed') }
+      else {
+        const catName = categories.find(c => c.slug === bulkCategory)?.name || bulkCategory
+        setSuccessMsg(`Updated ${selectedBiz.size} business${selectedBiz.size !== 1 ? 'es' : ''} to "${catName}"`)
+        setSelectedBiz(new Set())
+        setFilterNeedsCategory(false)
+        await fetchRecent()
+      }
+    } catch { setError('Network error') }
+    finally { setBulkUpdating(false) }
   }
 
   async function handleSearch() {
@@ -159,6 +200,15 @@ export default function AdminScraperPage() {
         </div>
       </div>
 
+      {/* Success message */}
+      {successMsg && (
+        <div className="flex items-center gap-2 p-4 mb-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <span>{successMsg}</span>
+          <button onClick={() => setSuccessMsg('')} className="ml-auto text-green-500 hover:text-green-700">&times;</button>
+        </div>
+      )}
+
       {/* ── Recently Imported ── */}
       <div className="bg-white rounded-xl border border-surface-200 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -166,10 +216,50 @@ export default function AdminScraperPage() {
             <List className="w-5 h-5 text-surface-500" />
             <h2 className="text-lg font-bold text-surface-900">Recently Imported</h2>
           </div>
-          <Link href="/admin/businesses" className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
-            View all <ExternalLink className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setFilterNeedsCategory(!filterNeedsCategory); setSelectedBiz(new Set()) }}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${filterNeedsCategory ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-surface-50 border-surface-200 text-surface-500 hover:text-surface-700'}`}
+            >
+              <Tags className="w-3 h-3 inline mr-1" />
+              {filterNeedsCategory ? 'Showing: Needs Category' : 'Show: All'}
+            </button>
+            <Link href="/admin/businesses" className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
+              View all <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
+
+        {/* Bulk category toolbar */}
+        {recent.filter(b => !filterNeedsCategory || b.category_slug === 'local-services').length > 0 && (
+          <div className="flex items-center gap-3 mb-4 p-3 bg-surface-50 rounded-xl">
+            <span className="text-xs text-surface-600 font-medium whitespace-nowrap">
+              {selectedBiz.size > 0 ? `${selectedBiz.size} selected` : 'Select rows to update'}
+            </span>
+            <select
+              value={bulkCategory}
+              onChange={(e) => setBulkCategory(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-surface-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleBulkUpdate}
+              disabled={selectedBiz.size === 0 || bulkUpdating}
+              className="px-4 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+            >
+              {bulkUpdating ? 'Updating...' : `Update Category`}
+            </button>
+            {selectedBiz.size > 0 && (
+              <button onClick={() => setSelectedBiz(new Set())} className="text-xs text-surface-400 hover:text-surface-600">
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
         {loadingRecent ? (
           <p className="text-sm text-surface-400">Loading...</p>
         ) : recent.length === 0 ? (
@@ -179,6 +269,17 @@ export default function AdminScraperPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-surface-200 text-surface-600 text-xs">
+                  <th className="text-left pb-2 pr-2 w-8">
+                    <input
+                      type="checkbox"
+                      checked={filteredRecent.length > 0 && selectedBiz.size === filteredRecent.length}
+                      onChange={() => {
+                        if (selectedBiz.size === filteredRecent.length) setSelectedBiz(new Set())
+                        else setSelectedBiz(new Set(filteredRecent.map(b => b.id)))
+                      }}
+                      className="rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                    />
+                  </th>
                   <th className="text-left pb-2 font-medium">Name</th>
                   <th className="text-left pb-2 font-medium">City</th>
                   <th className="text-left pb-2 font-medium">Category</th>
@@ -188,11 +289,25 @@ export default function AdminScraperPage() {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((b) => (
-                  <tr key={b.id} className="border-b border-surface-100 last:border-b-0">
+                {filteredRecent.map((b) => (
+                  <tr key={b.id} className={`border-b border-surface-100 last:border-b-0 ${selectedBiz.has(b.id) ? 'bg-brand-50' : ''}`}>
+                    <td className="py-2 pr-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedBiz.has(b.id)}
+                        onChange={() => {
+                          setSelectedBiz(p => { const n = new Set(p); if (n.has(b.id)) n.delete(b.id); else n.add(b.id); return n })
+                        }}
+                        className="rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                      />
+                    </td>
                     <td className="py-2 pr-4 font-medium text-surface-900">{b.name}</td>
                     <td className="py-2 pr-4 text-surface-600">{b.city || '-'}</td>
-                    <td className="py-2 pr-4 text-surface-600 capitalize">{b.category_slug}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${b.category_slug === 'local-services' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-surface-100 text-surface-600'}`}>
+                        {b.category_slug === 'local-services' ? 'Needs category' : b.category_slug.replace(/-/g, ' ')}
+                      </span>
+                    </td>
                     <td className="py-2 pr-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium ${b.is_scraped ? 'bg-green-50 text-green-700' : 'bg-surface-100 text-surface-600'}`}>
                         {b.is_scraped ? <Smartphone className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}

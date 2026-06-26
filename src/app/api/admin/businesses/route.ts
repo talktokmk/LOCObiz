@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = request.nextUrl
-  const limit = Math.min(Number(searchParams.get('limit')) || 50, 200)
+  const limit = Math.min(Number(searchParams.get('limit')) || 1000, 5000)
   const offset = Math.max(Number(searchParams.get('offset')) || 0, 0)
 
   const result = await db.execute({
@@ -88,6 +88,41 @@ export async function PATCH(request: NextRequest) {
       const result = await db.execute({ sql: 'DELETE FROM businesses' })
       revalidatePath('/', 'layout')
       return NextResponse.json({ success: true, count: result.rowsAffected })
+    }
+
+    if (action === 'delete_single') {
+      const { id } = body
+      if (!id) {
+        return NextResponse.json({ error: 'ID required' }, { status: 400 })
+      }
+      await db.execute({
+        sql: 'DELETE FROM businesses WHERE id = ?',
+        args: [Number(id)],
+      })
+      revalidatePath('/', 'layout')
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === 'bulk_update_category') {
+      const { ids, category_slug } = body
+      if (!Array.isArray(ids) || ids.length === 0 || !category_slug) {
+        return NextResponse.json({ error: 'ids[] and category_slug required' }, { status: 400 })
+      }
+      const catResult = await db.execute({
+        sql: 'SELECT id FROM categories WHERE slug = ?',
+        args: [category_slug],
+      })
+      if (catResult.rows.length === 0) {
+        return NextResponse.json({ error: 'Category not found' }, { status: 400 })
+      }
+      const catId = (catResult.rows[0] as Record<string, unknown>).id as number
+      const placeholders = ids.map(() => '?').join(',')
+      await db.execute({
+        sql: `UPDATE businesses SET category_id = ?, category_slug = ?, updated_at = datetime('now') WHERE id IN (${placeholders})`,
+        args: [catId, category_slug, ...ids],
+      })
+      revalidatePath('/', 'layout')
+      return NextResponse.json({ success: true, count: ids.length })
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

@@ -1,31 +1,70 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
 import Script from 'next/script'
 import './globals.css'
 
+export const viewport: Viewport = {
+  themeColor: '#25D366',
+  colorScheme: 'light',
+}
+
 export const metadata: Metadata = {
   title: {
-    default: 'ADZBE - Find Local Businesses Near You',
+    default: 'ADZBE - Find Local Businesses Near You | Connect on WhatsApp',
     template: '%s | ADZBE',
   },
-  description: 'Discover the best local businesses in your city. Search restaurants, salons, doctors, plumbers and more in India.',
-  keywords: ['local business', 'India', 'business directory', 'near me', 'restaurants', 'services'],
+  description: 'India\'s WhatsApp-first local business directory. Find trusted plumbers, electricians, salons, doctors and more near you. Browse ratings, read reviews, and connect instantly.',
+  keywords: ['local business', 'India', 'business directory', 'near me', 'restaurants', 'services', 'plumber', 'electrician', 'salon', 'doctor', 'WhatsApp'],
+  applicationName: 'ADZBE',
+  authors: [{ name: 'ADZBE' }],
+  generator: 'Next.js',
+  referrer: 'origin-when-cross-origin',
+  creator: 'ADZBE',
+  publisher: 'ADZBE',
+  category: 'business',
+  classification: 'Business Directory',
   openGraph: {
-    title: 'ADZBE - Find Local Businesses Near You',
-    description: 'Discover the best local businesses in your city.',
+    title: 'ADZBE - Find Local Businesses & Connect on WhatsApp',
+    description: 'India\'s fastest WhatsApp business discovery platform. Find trusted plumbers, electricians, salons, doctors and more near you. Connect instantly.',
     siteName: 'ADZBE',
     type: 'website',
     locale: 'en_IN',
-    images: [{ url: 'https://adzbe.cloud/og-image.png', width: 1200, height: 630 }],
+    countryName: 'India',
+    images: [{ url: 'https://adzbe.cloud/og-image.png', width: 1200, height: 630, alt: 'ADZBE - Local Business Directory' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ADZBE - Find Local Businesses Near You',
-    description: 'Discover the best local businesses in your city.',
+    title: 'ADZBE - Find Local Businesses on WhatsApp',
+    description: 'Find trusted local businesses near you. Connect instantly via WhatsApp.',
+    site: '@adzbe',
+    creator: '@adzbe',
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
+  other: {
+    'google-site-verification': '',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'ADZBE',
+    statusBarStyle: 'default',
+  },
+  formatDetection: {
+    telephone: true,
+    email: true,
+    address: true,
   },
 }
 
