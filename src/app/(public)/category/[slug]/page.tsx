@@ -33,12 +33,12 @@ export default async function CategorySlugPage({ params }: { params: Promise<{ s
   if (catResult.rows.length === 0) notFound()
 
   const businessesResult = await db.execute({
-    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, ${RANKING_SQL} as ranking_score FROM businesses WHERE category_slug = ? AND status = 'approved' ORDER BY ranking_score DESC LIMIT 50`,
+    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, claimed, ${RANKING_SQL} as ranking_score FROM businesses WHERE category_slug = ? AND status = 'approved' ORDER BY ranking_score DESC LIMIT 50`,
     args: [slug],
   })
   const businesses = businessesResult.rows as unknown as {
     slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
-    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; ranking_score: number
+    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; claimed: number; ranking_score: number
   }[]
 
   const cities = [...new Set(businesses.map((b) => b.city))]
@@ -117,6 +117,7 @@ export default async function CategorySlugPage({ params }: { params: Promise<{ s
                     address={biz.address}
                     verified={Boolean(biz.verified)}
                     featured={Boolean(biz.featured)}
+                    claimed={Boolean(biz.claimed)}
                     rank={i + 1}
                     rankingScore={biz.ranking_score}
                   />

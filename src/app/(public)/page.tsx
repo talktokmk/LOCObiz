@@ -26,7 +26,7 @@ export default async function HomePage() {
   let trending: { category_slug: string; count: number }[] = []
   let topBusinesses: {
     slug: string; name: string; category_slug: string; city: string; area: string; rating: number
-    reviews_count: number; phone: string; whatsapp: string; address: string; website: string; verified: number; ranking_score: number
+    reviews_count: number; phone: string; whatsapp: string; address: string; website: string; verified: number; claimed: number; ranking_score: number
   }[] = []
   let totalBiz = 0
   let totalCities = 0
@@ -38,7 +38,7 @@ export default async function HomePage() {
         "SELECT category_slug, COUNT(*) as count FROM businesses WHERE category_slug IS NOT NULL AND status = 'approved' GROUP BY category_slug ORDER BY count DESC LIMIT 8"
       ),
       db.execute(
-        `SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, whatsapp, address, website, verified, ${RANKING_SQL} as ranking_score FROM businesses WHERE status = 'approved' ORDER BY ranking_score DESC LIMIT 3`
+        `SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, whatsapp, address, website, verified, claimed, ${RANKING_SQL} as ranking_score FROM businesses WHERE status = 'approved' ORDER BY ranking_score DESC LIMIT 3`
       ),
       db.execute(
         "SELECT COUNT(*) as biz_count, COUNT(DISTINCT city) as city_count, COALESCE(SUM(whatsapp_clicks), 0) as wa_total FROM businesses WHERE status = 'approved'"
@@ -174,6 +174,9 @@ export default async function HomePage() {
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium rounded-full ${level.color}`}>
                         <Sparkles className="w-3 h-3" /> {level.label}
                       </span>
+                      {Boolean(biz.claimed) && (
+                        <span className="px-1.5 py-0.5 bg-whatsapp/10 text-whatsapp-dark text-[11px] font-medium rounded-full">Owner Verified</span>
+                      )}
                       {Boolean(biz.verified) && (
                         <span className="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[11px] font-medium rounded-full">Verified</span>
                       )}

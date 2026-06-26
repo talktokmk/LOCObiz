@@ -27,12 +27,12 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const cityName = city.charAt(0).toUpperCase() + city.slice(1)
 
   const businessesResult = await db.execute({
-    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, ${RANKING_SQL} as ranking_score FROM businesses WHERE LOWER(city) = LOWER(?) AND status = 'approved' ORDER BY ranking_score DESC`,
+    sql: `SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, whatsapp, address, verified, featured, claimed, ${RANKING_SQL} as ranking_score FROM businesses WHERE LOWER(city) = LOWER(?) AND status = 'approved' ORDER BY ranking_score DESC`,
     args: [city],
   })
   const businesses = businessesResult.rows as unknown as {
     slug: string; name: string; category_slug: string; city: string; area: string; district: string; state: string
-    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; ranking_score: number
+    rating: number; reviews_count: number; phone: string; whatsapp: string; address: string; verified: number; featured: number; claimed: number; ranking_score: number
   }[]
 
   if (businesses.length === 0) notFound()
@@ -107,6 +107,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
                 address={biz.address}
                 verified={Boolean(biz.verified)}
                 featured={Boolean(biz.featured)}
+                claimed={Boolean(biz.claimed)}
                 rankingScore={biz.ranking_score}
               />
             ))}

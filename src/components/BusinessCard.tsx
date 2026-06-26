@@ -18,12 +18,13 @@ interface BusinessCardProps {
   address?: string
   verified?: boolean
   featured?: boolean
+  claimed?: boolean
   rank?: number
   rankingScore?: number
 }
 
 export default function BusinessCard({
-  slug, name, category, city, area, rating, reviewsCount, phone, whatsapp, address, verified, rank, rankingScore,
+  slug, name, category, city, area, rating, reviewsCount, phone, whatsapp, address, verified, claimed, rank, rankingScore,
 }: BusinessCardProps) {
   const waNumber = findWaNumber(whatsapp, phone, address)
   const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`
@@ -48,6 +49,11 @@ export default function BusinessCard({
           {rankLevel && (
             <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium rounded-full ${rankLevel.color}`}>
               <Sparkles className="w-3 h-3" /> {rankLevel.label}
+            </span>
+          )}
+          {Boolean(claimed) && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-whatsapp/10 text-whatsapp-dark text-[11px] font-medium rounded-full">
+              <CheckCircle className="w-3 h-3" /> Owner Verified
             </span>
           )}
           {Boolean(verified) && (
