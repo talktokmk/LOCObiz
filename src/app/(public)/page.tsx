@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { Metadata } from 'next'
+
+export const dynamic = 'force-dynamic'
 import SearchBar from '@/components/SearchBar'
 import EmailCapture from '@/components/EmailCapture'
 import { WebsiteJsonLd } from '@/components/JsonLd'

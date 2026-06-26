@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -79,11 +80,13 @@ export async function PATCH(request: NextRequest) {
       const result = await db.execute({
         sql: "UPDATE businesses SET status = 'approved', updated_at = datetime('now') WHERE status = 'pending'",
       })
+      revalidatePath('/', 'layout')
       return NextResponse.json({ success: true, count: result.rowsAffected })
     }
 
     if (action === 'delete_all') {
       const result = await db.execute({ sql: 'DELETE FROM businesses' })
+      revalidatePath('/', 'layout')
       return NextResponse.json({ success: true, count: result.rowsAffected })
     }
 
