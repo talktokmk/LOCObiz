@@ -30,6 +30,8 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     router.push('/login')
   }
 
+  if (isPublic) return <>{children}</>
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-surface-500">Loading...</div>
   }
