@@ -124,9 +124,13 @@ function extractBusinesses() {
   const businesses = []
   const seen = new Set()
 
-  const containers = document.querySelectorAll(
+  const scrollContainer = findScrollContainer()
+  const root = scrollContainer || document.body
+
+  const containers = root.querySelectorAll(
     '[role="feed"] > div, [role="article"], .Nv2PK, .hfpxzc, ' +
-    'a[href*="/maps/place/"], .section-result, [data-result-index]'
+    'a[href*="/maps/place/"], .section-result, [data-result-index], ' +
+    'div[data-place-id], [class*="place-card"], [class*="result"]'
   )
 
   for (const el of containers) {
@@ -156,23 +160,99 @@ function extractBusinesses() {
   return businesses
 }
 
-async function scrollAllResults() {
-  const containers = [
-    document.querySelector('[role="feed"]'),
-    document.querySelector('.m6QErb'),
-    document.querySelector('.lXJj5c'),
-    document.querySelector('.section-scrollbox'),
+// ADZBE Scraper - Google Maps Content Script v3
+// Handles lazy-loaded results via MutationObserver + aggressive scrolling
+
+function findScrollContainer() {
+  const selectors = [
+    '[role="feed"]',
+    '.m6QErb',
+    '.lXJj5c',
+    '.section-scrollbox',
+    'div[role="listbox"]',
+    '[aria-label*="results"i]',
+    '.Nv2PK',
+    '.hfpxzc',
   ]
-  const c = containers.find(Boolean)
-  if (!c) return
-  let last = 0
-  let same = 0
-  for (let i = 0; i < 60; i++) {
-    c.scrollTop = c.scrollHeight
-    await new Promise(r => setTimeout(r, 1500))
-    if (c.scrollHeight === last) { same++; if (same >= 4) break }
-    else same = 0
-    last = c.scrollHeight
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) {
+      // Walk up to find the scrollable parent
+      let parent = el.parentElement
+      while (parent) {
+        const style = window.getComputedStyle(parent)
+        if (style.overflowY === 'scroll' || style.overflowY === 'auto' || parent.scrollHeight > parent.clientHeight) {
+          return parent
+        }
+        parent = parent.parentElement
+      }
+      return el.closest('[class*="scroll"]') || el
+    }
+  }
+  return null
+}
+
+function findResultContainer() {
+  const selectors = [
+    '[role="feed"]',
+    'div[role="listbox"]',
+    '.Nv2PK',
+  ]
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) return el.parentElement || el
+  }
+  return null
+}
+
+async function scrollAllResults() {
+  const container = findScrollContainer()
+  if (!container) { console.warn('ADZBE: no scroll container found'); return }
+
+  const resultContainer = findResultContainer()
+  if (!resultContainer) { console.warn('ADZBE: no result container found'); return }
+
+  // Click any "Show more" or "See all" buttons first
+  document.querySelectorAll('button, [role="button"]').forEach(btn => {
+    const t = (btn.textContent || '').toLowerCase()
+    if (t.includes('show more') || t.includes('see all') || t.includes('view all') || t.includes('load more')) {
+      try { (btn as HTMLElement).click() } catch {}
+    }
+  })
+
+  let lastCount = 0
+  let noChangeRounds = 0
+  const maxRounds = 40
+
+  for (let round = 0; round < maxRounds; round++) {
+    // Scroll the container in stages (smooth vs instant)
+    container.scrollTop = container.scrollHeight
+
+    // Also try smoother scroll
+    container.scrollTo?.({ top: container.scrollHeight, behavior: 'smooth' })
+
+    await new Promise(r => setTimeout(r, 1200))
+
+    // Try scrolling any inner scrollable divs too
+    const innerScrolls = container.querySelectorAll('[style*="overflow"], [class*="scroll"]')
+    for (const el of innerScrolls) {
+      try { (el as HTMLElement).scrollTop = (el as HTMLElement).scrollHeight } catch {}
+    }
+
+    // Count current visible business items
+    const items = container.querySelectorAll(
+      '[role="feed"] > div, [role="article"], .Nv2PK, [data-result-index], ' +
+      'a[href*="/maps/place/"], .section-result'
+    )
+    const currentCount = items.length
+
+    if (currentCount > lastCount) {
+      noChangeRounds = 0
+      lastCount = currentCount
+    } else {
+      noChangeRounds++
+      if (noChangeRounds >= 4) break
+    }
   }
 }
 
