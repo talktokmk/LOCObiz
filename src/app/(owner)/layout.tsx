@@ -12,19 +12,22 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const isPublic = pathname === '/login' || pathname === '/register'
+
   useEffect(() => {
+    if (isPublic) return setLoading(false)
     fetch('/api/owner/me')
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.owner) setOwner(data.owner)
-        else router.push('/owner/login')
+        else router.push('/login')
       })
       .finally(() => setLoading(false))
-  }, [router])
+  }, [router, isPublic])
 
   async function handleLogout() {
     await fetch('/api/owner/logout', { method: 'POST' })
-    router.push('/owner/login')
+    router.push('/login')
   }
 
   if (loading) {

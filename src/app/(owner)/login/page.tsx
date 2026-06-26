@@ -61,7 +61,7 @@ export default function OwnerLoginPage() {
             {loading ? 'Signing in...' : <><LogIn className="w-4 h-4" /> Sign In</>}
           </button>
           <p className="text-center text-sm text-surface-500">
-            Not registered? <Link href="/owner/register" className="text-whatsapp font-medium hover:underline">Create Account</Link>
+            Not registered? <Link href="/register" className="text-whatsapp font-medium hover:underline">Create Account</Link>
           </p>
         </form>
       </div>

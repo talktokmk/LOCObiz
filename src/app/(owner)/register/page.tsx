@@ -69,7 +69,7 @@ export default function OwnerRegisterPage() {
             {loading ? 'Creating...' : <><UserPlus className="w-4 h-4" /> Create Account</>}
           </button>
           <p className="text-center text-sm text-surface-500">
-            Already registered? <Link href="/owner/login" className="text-whatsapp font-medium hover:underline">Sign In</Link>
+            Already registered? <Link href="/login" className="text-whatsapp font-medium hover:underline">Sign In</Link>
           </p>
         </form>
       </div>
