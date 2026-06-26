@@ -52,6 +52,10 @@ export async function PATCH(request: NextRequest) {
         sql: "UPDATE businesses SET claimed = 1, claimed_by = ?, updated_at = datetime('now') WHERE id = ?",
         args: [lead.phone as string, lead.business_id as number],
       })
+      await db.execute({
+        sql: "INSERT INTO owner_notifications (owner_phone, business_id, type, message) VALUES (?, ?, 'claim_approved', ?)",
+        args: [lead.phone as string, lead.business_id as number, 'Your business claim has been approved! Create your account at /owner/register to manage your listing.'],
+      })
     }
 
     return NextResponse.json({ success: true, action })

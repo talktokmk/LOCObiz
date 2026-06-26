@@ -61,6 +61,36 @@ export async function initDb() {
     FOREIGN KEY (business_id) REFERENCES businesses(id)
   )`)
 
+  await db.execute(`CREATE TABLE IF NOT EXISTS owners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`)
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    rating INTEGER NOT NULL DEFAULT 5,
+    text TEXT,
+    owner_reply TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (business_id) REFERENCES businesses(id)
+  )`)
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS owner_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_phone TEXT NOT NULL,
+    business_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (business_id) REFERENCES businesses(id)
+  )`)
+
   await db.execute(`CREATE TABLE IF NOT EXISTS admins (
     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now'))
@@ -101,6 +131,8 @@ export async function initDb() {
   try { await db.execute("ALTER TABLE businesses ADD COLUMN is_scraped INTEGER DEFAULT 0") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN source TEXT DEFAULT 'manual'") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN opening_hours TEXT") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_reviews_business_id ON reviews(business_id)") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_owner_notifications_owner ON owner_notifications(owner_phone)") } catch {}
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id)") } catch {}
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_is_scraped ON businesses(is_scraped)") } catch {}
   // Backfill: mark existing businesses with place_id as scraped

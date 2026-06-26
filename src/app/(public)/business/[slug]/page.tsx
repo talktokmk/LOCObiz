@@ -143,6 +143,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
           <div className="p-6 md:p-8">
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-bold text-surface-900">{biz.name}</h1>
+              {Boolean(biz.claimed) && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-whatsapp/10 text-whatsapp-dark text-xs font-medium rounded-full">
+                  <CheckCircle className="w-3.5 h-3.5" /> Owner Verified
+                </span>
+              )}
               {Boolean(biz.verified) && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-brand-100 text-brand-700 text-xs font-medium rounded-full">
                   <CheckCircle className="w-3.5 h-3.5" /> Verified

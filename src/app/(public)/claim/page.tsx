@@ -54,6 +54,11 @@ function ClaimForm() {
         <p className="text-surface-500 mb-4">
           We&apos;ve received your request. Next step — send ₹499 via UPI to <span className="font-semibold">308080@aubank</span> and forward the transaction ID on WhatsApp to <a href="https://wa.me/918618008168" target="_blank" rel="noopener noreferrer" className="text-whatsapp font-semibold underline">+91 8618008168</a>. We&apos;ll approve within a few hours.
         </p>
+        <p className="text-sm text-surface-500 bg-surface-50 rounded-xl p-4">
+          After approval, create your owner account at{' '}
+          <a href="/owner/register" className="text-whatsapp font-semibold underline">/owner/register</a>{' '}
+          using the same phone number to access your dashboard.
+        </p>
       </div>
     )
   }
