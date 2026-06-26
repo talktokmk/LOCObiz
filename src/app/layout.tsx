@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_IN',
     countryName: 'India',
-    images: [{ url: 'https://adzbe.cloud/og-image.png', width: 1200, height: 630, alt: 'ADZBE - Local Business Directory' }],
+    images: [{ url: 'https://adzbe.cloud/opengraph-image.png', width: 1200, height: 630, alt: 'ADZBE - Local Business Directory' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -38,6 +38,7 @@ export const metadata: Metadata = {
     description: 'Find trusted local businesses near you. Connect instantly via WhatsApp.',
     site: '@adzbe',
     creator: '@adzbe',
+    images: ['https://adzbe.cloud/twitter-image.png'],
   },
   robots: {
     index: true,
@@ -52,6 +53,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
+    apple: '/apple-icon.svg',
   },
   other: {
     'google-site-verification': '',
@@ -74,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     '@type': 'Organization',
     name: 'ADZBE',
     url: 'https://adzbe.cloud',
-    logo: 'https://adzbe.cloud/logo.png',
+    logo: 'https://adzbe.cloud/logo.svg',
     description: 'India\'s WhatsApp-first local business discovery platform.',
     areaServed: 'IN',
   }
