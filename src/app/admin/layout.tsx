@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Store, MessageSquare, FileText, LogOut, MapPin, Menu, X, Upload, Search, Tags } from 'lucide-react'
+import { LayoutDashboard, Store, MessageSquare, FileText, LogOut, MapPin, Menu, X, Upload, Search, Tags, Bell } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<{ username: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [claimCount, setClaimCount] = useState(0)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -20,6 +22,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       })
       .then((data) => {
         setSession(data)
+        fetch('/api/admin/stats').then(r => r.ok && r.json()).then(s => {
+          setPendingCount(s.pendingBusinesses || 0)
+          setClaimCount(s.totalClaims || 0)
+        }).catch(() => {})
         setLoading(false)
       })
       .catch(() => {
@@ -65,6 +71,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <MapPin className="w-6 h-6" />
             <span className="text-lg font-bold">ADZBE Admin</span>
           </Link>
+          <div className="mt-4 flex items-center gap-3 bg-surface-800 rounded-xl px-4 py-2.5">
+            <div className="relative">
+              <Bell className="w-5 h-5 text-surface-400" />
+              {(pendingCount + claimCount) > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                  {pendingCount + claimCount}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-surface-400">
+              <span className="block text-surface-300 font-medium">Notifications</span>
+              <span>{pendingCount} pending · {claimCount} claims</span>
+            </div>
+          </div>
         </div>
         <nav className="px-4 space-y-1">
           {navItems.map((item) => {
@@ -114,6 +134,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <MapPin className="w-6 h-6" />
                   <span className="text-lg font-bold">ADZBE Admin</span>
                 </Link>
+                <div className="mt-3 flex items-center gap-3 bg-surface-800 rounded-xl px-4 py-2.5">
+                  <div className="relative">
+                    <Bell className="w-5 h-5 text-surface-400" />
+                    {(pendingCount + claimCount) > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                        {pendingCount + claimCount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-surface-400">
+                    <span className="block text-surface-300 font-medium">Notifications</span>
+                    <span>{pendingCount} pending · {claimCount} claims</span>
+                  </div>
+                </div>
               </div>
               <nav className="px-4 space-y-1">
                 {navItems.map((item) => {

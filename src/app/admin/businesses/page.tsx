@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, Star, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Search, Star, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, ExternalLink } from 'lucide-react'
 
 interface Business {
   id: number
@@ -260,6 +260,10 @@ export default function AdminBusinessesPage() {
                             </button>
                           </>
                         )}
+                        <a href={`/business/${biz.slug}`} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition-colors" title="View live page">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
                         <button onClick={() => deleteBusiness(biz.id)} className="text-red-500 hover:text-red-700 text-xs font-medium ml-1">Delete</button>
                       </div>
                     </td>
