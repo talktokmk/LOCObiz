@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Toaster } from 'sonner'
+import Script from 'next/script'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -15,6 +16,16 @@ export const metadata: Metadata = {
     siteName: 'ADZBE',
     type: 'website',
     locale: 'en_IN',
+    images: [{ url: 'https://adzbe.cloud/og-image.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ADZBE - Find Local Businesses Near You',
+    description: 'Discover the best local businesses in your city.',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
@@ -32,10 +43,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-whatsapp focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold"
+        >
+          Skip to main content
+        </a>
+        <Script id="jsonld-org" type="application/ld+json" strategy="afterInteractive">
+          {JSON.stringify(orgSchema)}
+        </Script>
         {children}
         <Toaster position="top-center" richColors />
       </body>

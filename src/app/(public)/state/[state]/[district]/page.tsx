@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getStateBySlug } from '@/lib/states'
 import BusinessCard from '@/components/BusinessCard'
-import { ChevronRight, MessageCircle } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ state: string; district: string }> }) {
   const { state, district } = await params
@@ -28,7 +28,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ state
   const districtName = district.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
   const businessesResult = await db.execute({
-    sql: "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE state = ? AND LOWER(district) = LOWER(?) AND status = 'approved' ORDER BY featured DESC, whatsapp_clicks DESC, rating DESC, reviews_count DESC",
+    sql: "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE state = ? AND LOWER(district) = LOWER(?) AND status = 'approved' ORDER BY featured DESC, created_at DESC",
     args: [state, districtName],
   })
   const businesses = businessesResult.rows as unknown as {

@@ -2,10 +2,71 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { detectCategoryFromTypes, detectCategoryFromName, buildSEODescription, ensureCategoryExists, googleTypeToSlug, googleTypeToName } from '@/lib/categories'
 
 const PLACES_TEXT_SEARCH = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
 const PLACE_DETAILS = 'https://maps.googleapis.com/maps/api/place/details/json'
 const MAX_PER_IMPORT = 50
+
+const INDIAN_STATES = [
+  'andhra pradesh', 'arunachal pradesh', 'assam', 'bihar', 'chhattisgarh', 'goa', 'gujarat',
+  'haryana', 'himachal pradesh', 'jharkhand', 'karnataka', 'kerala', 'madhya pradesh',
+  'maharashtra', 'manipur', 'meghalaya', 'mizoram', 'nagaland', 'odisha', 'orissa', 'punjab',
+  'rajasthan', 'sikkim', 'tamil nadu', 'telangana', 'tripura', 'uttar pradesh', 'uttarakhand',
+  'west bengal', 'andaman and nicobar', 'chandigarh', 'dadra and nagar haveli',
+  'daman and diu', 'delhi', 'jammu and kashmir', 'ladakh', 'lakshadweep', 'puducherry',
+]
+
+const STATE_SLUGS: Record<string, string> = {
+  'andhra pradesh': 'andhra-pradesh', 'arunachal pradesh': 'arunachal-pradesh',
+  assam: 'assam', bihar: 'bihar', chhattisgarh: 'chhattisgarh', goa: 'goa',
+  gujarat: 'gujarat', haryana: 'haryana', 'himachal pradesh': 'himachal-pradesh',
+  jharkhand: 'jharkhand', karnataka: 'karnataka', kerala: 'kerala',
+  'madhya pradesh': 'madhya-pradesh', maharashtra: 'maharashtra',
+  manipur: 'manipur', meghalaya: 'meghalaya', mizoram: 'mizoram', nagaland: 'nagaland',
+  odisha: 'odisha', orissa: 'odisha', punjab: 'punjab', rajasthan: 'rajasthan',
+  sikkim: 'sikkim', 'tamil nadu': 'tamil-nadu', telangana: 'telangana',
+  tripura: 'tripura', 'uttar pradesh': 'uttar-pradesh', uttarakhand: 'uttarakhand',
+  'west bengal': 'west-bengal', delhi: 'delhi',
+}
+
+function parseIndianAddress(address: string, fallbackCity: string) {
+  const result: Record<string, string> = { area: '', city: fallbackCity || '', district: '', state: '', stateSlug: '', pincode: '' }
+  if (!address) return result
+
+  const pincodeMatch = address.match(/\b(\d{6})\b/)
+  if (pincodeMatch) result.pincode = pincodeMatch[1]
+
+  const parts = address.split(',').map((p) => p.trim()).filter(Boolean)
+
+  for (const part of parts) {
+    const lower = part.toLowerCase()
+    const found = INDIAN_STATES.find((s) => lower.includes(s))
+    if (found) {
+      result.state = found === 'orissa' ? 'Odisha' : found.replace(/\b\w/g, (c: string) => c.toUpperCase())
+      result.stateSlug = STATE_SLUGS[found] || found.toLowerCase().replace(/\s+/g, '-')
+      break
+    }
+  }
+
+  const stateIdx = parts.findIndex((p) => {
+    const lower = p.toLowerCase()
+    return INDIAN_STATES.some((s) => lower.includes(s) || lower.endsWith(s))
+  })
+
+  if (stateIdx > 0) {
+    const cityCandidate = parts[stateIdx - 1].replace(/\d{6}/g, '').trim()
+    if (cityCandidate) result.city = cityCandidate
+    if (stateIdx > 1) result.area = parts.slice(0, stateIdx - 1).join(', ')
+    else result.area = parts.slice(0, stateIdx).join(', ')
+    if (stateIdx >= 2) {
+      result.district = parts[stateIdx - 1].replace(/\d{6}/g, '').trim()
+    }
+  }
+
+  if (!result.city && fallbackCity) result.city = fallbackCity
+  return result
+}
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
@@ -66,15 +127,30 @@ async function handleSearch(body: Record<string, unknown>) {
     return NextResponse.json({ error: `Google API: ${data.status} — ${data.error_message || ''}` }, { status: 502 })
   }
 
-  const results = (data.results || []).map((r: Record<string, unknown>) => ({
-    placeId: r.place_id,
-    name: r.name,
-    address: r.formatted_address || '',
-    rating: r.rating || null,
-    vicinity: r.vicinity || '',
-    types: r.types || [],
-    icon: r.icon || '',
-  }))
+  const catResult = await db.execute('SELECT slug FROM categories')
+  const validSlugs = new Set(catResult.rows.map((r: Record<string, unknown>) => r.slug as string))
+
+  const results = (data.results || []).map((r: Record<string, unknown>) => {
+    const types = (r.types || []) as string[]
+    const name = (r.name || '') as string
+    let detected = detectCategoryFromTypes(types)
+    if (!detected) detected = detectCategoryFromName(name)
+    const suggestedFromTypes = !detected && types.length > 0
+      ? types[0].replace(/_/g, '-').toLowerCase()
+      : ''
+    if (!detected || !validSlugs.has(detected)) detected = ''
+    return {
+      placeId: r.place_id,
+      name,
+      address: r.formatted_address || '',
+      rating: r.rating || null,
+      vicinity: r.vicinity || '',
+      types,
+      icon: r.icon || '',
+      detectedCategory: detected,
+      category: detected || suggestedFromTypes || undefined,
+    }
+  })
 
   return NextResponse.json({
     results,
@@ -85,7 +161,7 @@ async function handleSearch(body: Record<string, unknown>) {
 
 async function handleImport(body: Record<string, unknown>) {
   const apiKey = body.apiKey as string
-  const selected = body.selected as { placeId: string; category: string; city?: string }[]
+  const selected = body.selected as { placeId: string; name?: string; category?: string; city?: string; types?: string[] }[]
   if (!apiKey || !Array.isArray(selected) || selected.length === 0) {
     return NextResponse.json({ error: 'API key and selected places required' }, { status: 400 })
   }
@@ -96,9 +172,7 @@ async function handleImport(body: Record<string, unknown>) {
 
   const catResult = await db.execute('SELECT slug, id FROM categories')
   const catMap = new Map<string, number>()
-  const catSlugs = new Set<string>()
   for (const r of catResult.rows as Record<string, unknown>[]) {
-    catSlugs.add(r.slug as string)
     catMap.set(r.slug as string, r.id as number)
   }
 
@@ -107,17 +181,38 @@ async function handleImport(body: Record<string, unknown>) {
   const errors: string[] = []
 
   for (const item of selected) {
-    const catSlug = (item.category || 'restaurants').toLowerCase().replace(/\s+/g, '-')
-    if (!catSlugs.has(catSlug)) {
-      errors.push(`"${item.placeId}": invalid category "${catSlug}"`)
-      skipped++
-      continue
+    let catSlug = (item.category || '').toLowerCase().replace(/\s+/g, '-')
+    if (!catSlug || !catMap.has(catSlug)) {
+      const types = item.types || []
+      const name = item.name || item.placeId || ''
+      catSlug = detectCategoryFromTypes(types) || detectCategoryFromName(name) || ''
+
+      if (catSlug && !catMap.has(catSlug)) {
+        const catIdNew = await ensureCategoryExists(db, catSlug)
+        if (catIdNew) { catMap.set(catSlug, catIdNew) }
+      }
+
+      if ((!catSlug || !catMap.has(catSlug)) && types.length > 0) {
+        catSlug = types[0].replace(/_/g, '-').toLowerCase()
+        const catIdNew = await ensureCategoryExists(db, catSlug)
+        if (catIdNew) { catMap.set(catSlug, catIdNew) }
+      }
+
+      if (!catSlug || !catMap.has(catSlug)) { skipped++; continue }
     }
 
+    // Dedup by place_id
+    const existing = await db.execute({
+      sql: 'SELECT id FROM businesses WHERE place_id = ? LIMIT 1',
+      args: [item.placeId],
+    })
+    if (existing.rows.length > 0) { skipped++; continue }
+
     try {
+      const fields = 'name,formatted_address,formatted_phone_number,international_phone_number,website,rating,url,opening_hours,geometry,types'
       const params = new URLSearchParams({
         place_id: item.placeId,
-        fields: 'name,formatted_address,formatted_phone_number,international_phone_number,website,rating,url,opening_hours,geometry',
+        fields,
         key: apiKey,
       })
       const res = await fetch(`${PLACE_DETAILS}?${params}`, {
@@ -145,7 +240,7 @@ async function handleImport(body: Record<string, unknown>) {
         continue
       }
 
-      const address = (p.formatted_address as string) || (p.vicinity as string) || ''
+      const address = (p.formatted_address as string) || ''
       const phone = (p.international_phone_number as string) || (p.formatted_phone_number as string) || ''
       const website = (p.website as string) || ''
       const rating = p.rating != null ? Math.min(5, Math.max(0, Number(p.rating))) : 0
@@ -153,20 +248,42 @@ async function handleImport(body: Record<string, unknown>) {
       const location = geometry?.location as Record<string, unknown> | undefined
       const lat = location?.lat as number | null ?? null
       const lng = location?.lng as number | null ?? null
+      const placeId = item.placeId
+
+      const googleTypes = (p.types as string[]) || item.types || []
+
+      if (!catSlug || !catMap.has(catSlug)) {
+        const reDetected = detectCategoryFromTypes(googleTypes) || detectCategoryFromName(name)
+        if (reDetected && catMap.has(reDetected)) catSlug = reDetected
+        else catSlug = 'restaurants'
+      }
 
       const city = item.city || ''
-      const citySlug = slugify(city)
+
+      // Parse address for area/city/district/state
+      const parsed = parseIndianAddress(address, city)
+
+      const citySlug = slugify(parsed.city || city)
       const baseSlug = slugify(name)
       const slug = `${baseSlug}-${citySlug}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
       const catId = catMap.get(catSlug)!
+      const description = buildSEODescription(name, catSlug, parsed.city || city, parsed.area || '')
+      const catName = catSlug.replace(/-/g, ' ')
+      const servicesJSON = JSON.stringify([catName, ...(p.types as string[] || []).map((t: string) => t.replace(/_/g, ' '))])
+
+      const openingHours = p.opening_hours
+        ? (typeof p.opening_hours === 'object' ? JSON.stringify(p.opening_hours) : String(p.opening_hours))
+        : ''
 
       await db.execute({
-        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, address, phone, website, description, services, rating, latitude, longitude, featured, verified, views, status)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-        args: [name, slug, catId, catSlug, city, address, phone, website,
-          `${name} — ${address}`,
-          '[]', rating, lat, lng, 0, 0, 0],
+        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, opening_hours, description, services, rating, latitude, longitude, place_id, featured, verified, views, status, is_scraped, source)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1, 'api')`,
+        args: [name, slug, catId, catSlug, parsed.city || city,
+          parsed.district || null, parsed.stateSlug || null, parsed.area || null,
+          address, phone, website, openingHours,
+          description,
+          servicesJSON, rating, lat, lng, placeId, 0, 0, 0],
       })
       inserted++
     } catch (e: unknown) {

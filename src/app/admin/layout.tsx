@@ -87,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-surface-800">
           <div className="flex items-center justify-between">
             <span className="text-sm text-surface-400">{session.username}</span>
-            <button onClick={handleLogout} className="p-2 text-surface-400 hover:text-white transition-colors">
+            <button onClick={handleLogout} aria-label="Sign out" className="p-2 text-surface-400 hover:text-white transition-colors">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -96,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="flex-1 min-w-0">
         <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-surface-200 px-4 h-14 flex items-center">
-          <button onClick={() => setSidebarOpen(true)} className="text-surface-600">
+          <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="text-surface-600">
             <Menu className="w-5 h-5" />
           </button>
           <span className="ml-3 font-semibold text-surface-900">ADZBE Admin</span>
@@ -105,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <div className="fixed inset-y-0 left-0 w-64 bg-surface-900" onClick={(e) => e.stopPropagation()}>
               <div className="p-4 flex justify-end">
-                <button onClick={() => setSidebarOpen(false)} className="text-surface-400 hover:text-white">
+                <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="text-surface-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>

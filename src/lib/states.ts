@@ -1011,13 +1011,6 @@ export const states: State[] = [
   },
 ];
 
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 export function getStateBySlug(slug: string): State | undefined {
   return states.find((state) => state.slug === slug);
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp, List } from 'lucide-react'
+import { Globe, ExternalLink, AlertCircle, Info, ChevronDown, ChevronUp, List, Smartphone, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface ImportedBusiness {
@@ -11,6 +11,9 @@ interface ImportedBusiness {
   city: string
   category_slug: string
   phone: string
+  status: string
+  is_scraped: number
+  source: string
   created_at: string
 }
 
@@ -21,7 +24,8 @@ export default function AdminScraperPage() {
   const [apiKey, setApiKey] = useState('')
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
-  const [category, setCategory] = useState('restaurants')
+  const [category, setCategory] = useState('')
+  const [categories, setCategories] = useState<{ slug: string; name: string }[]>([])
   const [results, setResults] = useState<Record<string, unknown>[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
@@ -30,7 +34,7 @@ export default function AdminScraperPage() {
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null)
   const [showKey, setShowKey] = useState(false)
 
-  useEffect(() => { fetchRecent() }, [])
+  useEffect(() => { fetchRecent(); fetchCategories() }, [])
 
   async function fetchRecent() {
     try {
@@ -41,7 +45,14 @@ export default function AdminScraperPage() {
     finally { setLoadingRecent(false) }
   }
 
-  const categories = ['restaurants', 'salons', 'gyms', 'doctors', 'plumbers', 'electricians', 'tutors', 'grocery', 'pharmacies', 'carpenters']
+  async function fetchCategories() {
+    try {
+      const res = await fetch('/api/categories')
+      const data = res.ok ? await res.json() : []
+      setCategories(data)
+      if (data.length > 0) setCategory(data[0].slug)
+    } catch { /* ignore */ }
+  }
 
   async function handleSearch() {
     setError('')
@@ -70,7 +81,13 @@ export default function AdminScraperPage() {
     if (selected.size === 0) { setError('Select at least one business'); return }
     setError(''); setImportResult(null); setImporting(true)
     try {
-      const items = results.filter(r => selected.has(r.placeId as string)).map(r => ({ placeId: r.placeId as string, category, city }))
+      const items = results.filter(r => selected.has(r.placeId as string)).map(r => ({
+        placeId: r.placeId as string,
+        name: r.name as string,
+        category: (r.detectedCategory as string) || (r.category as string) || category,
+        city,
+        types: r.types as string[],
+      }))
       const res = await fetch('/api/admin/scraper', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +130,7 @@ export default function AdminScraperPage() {
                 <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center text-xs font-bold shrink-0">2</div>
                 <div>
                   <div className="font-medium text-surface-800">Search on Google Maps</div>
-                  <div className="text-surface-500 text-xs mt-0.5">e.g. "restaurants in Andheri"</div>
+                  <div className="text-surface-500 text-xs mt-0.5">e.g. &quot;restaurants in Andheri&quot;</div>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-surface-50 rounded-xl">
@@ -129,8 +146,8 @@ export default function AdminScraperPage() {
               <summary className="text-sm text-brand-600 hover:text-brand-700 font-medium cursor-pointer">Installation instructions</summary>
               <div className="mt-3 text-sm text-surface-600 bg-surface-50 rounded-xl p-4 space-y-2">
                 <p>1. Open Chrome and go to <code className="text-brand-600 bg-brand-50 px-1 rounded">chrome://extensions</code></p>
-                <p>2. Enable <strong>"Developer mode"</strong> (toggle in top-right)</p>
-                <p>3. Click <strong>"Load unpacked"</strong></p>
+                <p>2. Enable <strong>&quot;Developer mode&quot;</strong> (toggle in top-right)</p>
+                <p>3. Click <strong>&quot;Load unpacked&quot;</strong></p>
                 <p>4. Select the <code className="text-brand-600 bg-brand-50 px-1 rounded">extension</code> folder inside your ADZBE project</p>
                 <p>5. The ADZBE icon appears in your toolbar. Go to Google Maps, search, and click it!</p>
                 <p className="text-surface-400 text-xs mt-2">
@@ -165,6 +182,7 @@ export default function AdminScraperPage() {
                   <th className="text-left pb-2 font-medium">Name</th>
                   <th className="text-left pb-2 font-medium">City</th>
                   <th className="text-left pb-2 font-medium">Category</th>
+                  <th className="text-left pb-2 font-medium">Source</th>
                   <th className="text-left pb-2 font-medium">Phone</th>
                   <th className="text-left pb-2 font-medium">Imported</th>
                 </tr>
@@ -175,6 +193,12 @@ export default function AdminScraperPage() {
                     <td className="py-2 pr-4 font-medium text-surface-900">{b.name}</td>
                     <td className="py-2 pr-4 text-surface-600">{b.city || '-'}</td>
                     <td className="py-2 pr-4 text-surface-600 capitalize">{b.category_slug}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium ${b.is_scraped ? 'bg-green-50 text-green-700' : 'bg-surface-100 text-surface-600'}`}>
+                        {b.is_scraped ? <Smartphone className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
+                        {b.source || (b.is_scraped ? 'scraped' : 'manual')}
+                      </span>
+                    </td>
                     <td className="py-2 pr-4 text-surface-600">{b.phone || '-'}</td>
                     <td className="py-2 text-surface-400 text-xs whitespace-nowrap">{b.created_at ? new Date(b.created_at + 'Z').toLocaleDateString() : '-'}</td>
                   </tr>
@@ -233,7 +257,7 @@ export default function AdminScraperPage() {
               <div>
                 <label className="block text-sm font-medium text-surface-700 mb-1">Category</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
-                  {categories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                  {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
             </div>
@@ -283,7 +307,15 @@ export default function AdminScraperPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-surface-900 text-sm">{r.name as string}</div>
                       <div className="text-xs text-surface-500 mt-0.5 truncate">{(r.address as string) || (r.vicinity as string) || 'No address'}</div>
-                      {r.rating != null && <div className="text-xs text-surface-400 mt-0.5">{'★'.repeat(Math.round(r.rating as number))}{'☆'.repeat(5 - Math.round(r.rating as number))} {String(r.rating)}</div>}
+                      <div className="flex items-center gap-2 mt-1">
+                        {r.rating != null && <span className="text-xs text-surface-400">{'★'.repeat(Math.round(r.rating as number))}{'☆'.repeat(5 - Math.round(r.rating as number))} {String(r.rating)}</span>}
+                        {(r.detectedCategory || r.category) ? (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium ${r.detectedCategory ? 'bg-brand-50 text-brand-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {String(r.detectedCategory || r.category)}
+                            {!r.detectedCategory ? ' (new)' : ''}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 ))}

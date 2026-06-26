@@ -26,7 +26,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const cityName = city.charAt(0).toUpperCase() + city.slice(1)
 
   const businessesResult = await db.execute({
-    sql: "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE LOWER(city) = LOWER(?) AND status = 'approved' ORDER BY featured DESC, whatsapp_clicks DESC, rating DESC, reviews_count DESC",
+    sql: "SELECT slug, name, category_slug, city, area, district, state, rating, reviews_count, phone, address, verified, featured FROM businesses WHERE LOWER(city) = LOWER(?) AND status = 'approved' ORDER BY featured DESC, created_at DESC",
     args: [city],
   })
   const businesses = businessesResult.rows as unknown as {

@@ -231,8 +231,8 @@ async function main() {
         const desc = generateDescription(name, cat.name, area, cc.city)
 
         await db.execute({
-          sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes, is_scraped, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'manual')`,
           args: [name, slug, catIndex, cat.slug, cc.city, cc.district, cc.state, area, `${area}, ${cc.city}`,
             phone, desc, services, randomRating(), Math.floor(Math.random() * 200 + 10), 1,
             Math.floor(Math.random() * 3000 + 100), Math.floor(Math.random() * 80 + 1)],
@@ -255,8 +255,8 @@ async function main() {
         const slug = `${slugify(name)}-${cc.city.toLowerCase()}-${total}`
 
         await db.execute({
-          sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes, is_scraped, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'manual')`,
           args: [name, slug, catIndex, cat.slug, cc.city, cc.district, cc.state, area, `${area}, ${cc.city}`,
             randomPhone(), generateDescription(name, cat.name, area, cc.city), JSON.stringify(pickServices(cat.slug)),
             randomRating(), Math.floor(Math.random() * 200 + 10), Math.random() > 0.4 ? 1 : 0,

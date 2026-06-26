@@ -80,6 +80,8 @@ await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_category_slug ON bus
 await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_districts_state_slug ON districts(state_slug)')
 await db.execute('CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)')
+await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_search ON businesses(status, city, category_slug, featured, whatsapp_clicks, rating)')
+await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_name ON businesses(name)')
 try { await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id) WHERE place_id IS NOT NULL AND place_id != \'\'') } catch {}
 
 try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}

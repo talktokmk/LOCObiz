@@ -9,7 +9,8 @@ export default async function Footer() {
     cities = citiesRes.rows as unknown as { city: string }[]
     const catRes = await db.execute("SELECT DISTINCT category_slug FROM businesses WHERE category_slug IS NOT NULL AND status = 'approved' ORDER BY category_slug LIMIT 10")
     categories = catRes.rows as unknown as { category_slug: string }[]
-  } catch {
+  } catch (e) {
+    console.error('Footer query failed:', e)
     cities = []
     categories = []
   }

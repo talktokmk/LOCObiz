@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { detectCategoryFromTypes, detectCategoryFromName, buildSEODescription, ensureCategoryExists } from '@/lib/categories'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -214,8 +215,16 @@ export async function POST(request: NextRequest) {
       if (!name) { skipped++; continue }
 
       const phone = b.phone || ''
+      const placeId = b.placeId || ''
 
-      if (phone) {
+      // Dedup by place_id (strongest) or phone
+      if (placeId) {
+        const dup = await db.execute({
+          sql: 'SELECT id FROM businesses WHERE place_id = ? LIMIT 1',
+          args: [placeId],
+        })
+        if (dup.rows.length > 0) { skipped++; continue }
+      } else if (phone) {
         const dup = await db.execute({
           sql: 'SELECT id FROM businesses WHERE phone = ? LIMIT 1',
           args: [phone],
@@ -224,32 +233,51 @@ export async function POST(request: NextRequest) {
       }
 
       const catRaw = b.category || ''
-      let catSlug = mapCategory(catRaw, catNames)
-      if (catSlug === 'restaurants' && catRaw && !/restaurant|cafe|food|dining|bakery|bistro|hotel|eatery|mess|tiffin|snacks|fast food|sweets|ice cream/i.test(catRaw)) {
-        const newSlug = slugify(catRaw)
-        if (newSlug && !catMap.has(newSlug)) {
-          const displayName = catRaw.replace(/\b\w/g, (c: string) => c.toUpperCase())
-          try {
-            await db.execute({
-              sql: 'INSERT OR IGNORE INTO categories (slug, name) VALUES (?, ?)',
-              args: [newSlug, displayName],
-            })
-            const newCat = await db.execute({
-              sql: 'SELECT id FROM categories WHERE slug = ?',
-              args: [newSlug],
-            })
-            if (newCat.rows.length > 0) {
-              const row = newCat.rows[0] as Record<string, unknown>
-              catMap.set(newSlug, row.id as number)
-              catNames.push({ name: displayName.toLowerCase(), slug: newSlug })
-              catSlug = newSlug
-            }
-          } catch { /* keep restaurants as fallback */ }
-        } else if (newSlug && catMap.has(newSlug)) {
-          catSlug = newSlug
+      const googleTypes = b.types as string[] | undefined
+      let catSlug = detectCategoryFromTypes(googleTypes || []) || detectCategoryFromName(name) || mapCategory(catRaw, catNames)
+
+      // If still no match, auto-create from Google types
+      if (!catSlug || !catMap.has(catSlug)) {
+        const rawTypes = b.types as string[] | undefined
+        if (catSlug && !catMap.has(catSlug)) {
+          const newId = await ensureCategoryExists(db, catSlug)
+          if (newId) { catMap.set(catSlug, newId) }
+        }
+        if ((!catSlug || !catMap.has(catSlug)) && rawTypes && rawTypes.length > 0) {
+          catSlug = rawTypes[0].replace(/_/g, '-').toLowerCase()
+          const newId = await ensureCategoryExists(db, catSlug)
+          if (newId) { catMap.set(catSlug, newId) }
         }
       }
-      if (!catMap.has(catSlug)) catSlug = 'restaurants'
+
+      if (!catSlug || !catMap.has(catSlug)) {
+        // Try creating from raw category text
+        if (catRaw && !/restaurant|cafe|food|dining|bakery|bistro|hotel|eatery|mess|tiffin|snacks|fast food|sweets|ice cream/i.test(catRaw)) {
+          const newSlug = slugify(catRaw)
+          if (newSlug && !catMap.has(newSlug)) {
+            const displayName = catRaw.replace(/\b\w/g, (c: string) => c.toUpperCase())
+            try {
+              await db.execute({
+                sql: 'INSERT OR IGNORE INTO categories (slug, name) VALUES (?, ?)',
+                args: [newSlug, displayName],
+              })
+              const newCat = await db.execute({
+                sql: 'SELECT id FROM categories WHERE slug = ?',
+                args: [newSlug],
+              })
+              if (newCat.rows.length > 0) {
+                const row = newCat.rows[0] as Record<string, unknown>
+                catMap.set(newSlug, row.id as number)
+                catNames.push({ name: displayName.toLowerCase(), slug: newSlug })
+                catSlug = newSlug
+              }
+            } catch { /* keep fallback */ }
+          } else if (newSlug && catMap.has(newSlug)) {
+            catSlug = newSlug
+          }
+        }
+        if (!catSlug || !catMap.has(catSlug)) { skipped++; continue }
+      }
       const catId = catMap.get(catSlug)
       if (!catId) { skipped++; continue }
 
@@ -257,14 +285,14 @@ export async function POST(request: NextRequest) {
       const parsed = parseIndianAddress(address, normalizedDefault)
 
       const website = b.website || ''
-      const placeId = b.placeId || ''
+      const openingHours = b.openingHours || ''
       const slug = `${slugify(name)}-${Date.now()}-${i}`
 
       try {
         await db.execute({
           sql: `INSERT OR IGNORE INTO businesses
-                (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, place_id, description, services, rating, reviews_count, verified, views, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+                (name, slug, category_id, category_slug, city, district, state, area, address, phone, website, place_id, opening_hours, description, services, rating, reviews_count, verified, views, status, is_scraped, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1, 'extension')`,
           args: [
             name, slug, catId, catSlug,
             parsed.city || normalizedDefault,
@@ -272,10 +300,9 @@ export async function POST(request: NextRequest) {
             parsed.stateSlug || null,
             parsed.area || null,
             address,
-            phone, website, placeId,
-            `${name} — ${parsed.city || address || name}`,
-            '[]', 0, 0, 0,
-            0,
+            phone, website, placeId, openingHours,
+            buildSEODescription(name, catSlug, parsed.city || normalizedDefault, ''),
+            '[]', 0, 0, 0, 0,
           ],
         })
         inserted++
@@ -330,7 +357,7 @@ function mapCategory(text: string, dbCategories: { name: string; slug: string }[
   }
 
   let bestScore = 0
-  let bestSlug = 'restaurants'
+  let bestSlug = ''
   for (const cat of dbCategories) {
     let score = 0
     const catName = cat.name.toLowerCase()

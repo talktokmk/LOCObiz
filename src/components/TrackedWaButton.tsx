@@ -21,7 +21,7 @@ export default function TrackedWaButton({
   className = '', fullWidth = true, size = 'md', pulse = false,
   children,
 }: TrackedWaButtonProps) {
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleClick = useCallback(() => {
     if (businessId) {
       navigator.sendBeacon('/api/track/whatsapp', JSON.stringify({
         businessId,

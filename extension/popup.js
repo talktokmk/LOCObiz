@@ -74,18 +74,22 @@ scrapeBtn.addEventListener('click', async () => {
   actionsEl.style.display = 'none'
 
   try {
-    // Try to scroll all results first, then scrape
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'scrollAll' })
-    if (response && response.businesses) {
+    // Try full scrape with scrolling + all fields
+    const response = await chrome.tabs.sendMessage(tab.id, { action: 'scrapeFull' })
+    if (response && response.businesses && response.businesses.length > 0) {
       scrapedBusinesses = response.businesses
       displayResults(scrapedBusinesses)
+      // Auto-detect city from page info if available
+      if (response.pageInfo?.detectedCity && !cityInput.value) {
+        cityInput.value = response.pageInfo.detectedCity
+      }
     } else {
       // Fallback to simple scrape
       const fallback = await chrome.tabs.sendMessage(tab.id, { action: 'scrape' })
       scrapedBusinesses = fallback?.businesses || []
       displayResults(scrapedBusinesses)
     }
-  } catch (e) {
+  } catch {
     messageEl.innerHTML = `<div class="error">Error: could not access page. Try refreshing Google Maps.</div>`
   }
 
@@ -114,6 +118,8 @@ function displayResults(businesses) {
       <div class="result-meta">${b.address || ''}${b.category ? ' <span class="badge">' + escapeHtml(b.category) + '</span>' : ''}</div>
       ${b.rating ? `<div class="result-meta">★ ${b.rating}${b.reviews ? ' (' + b.reviews + ' reviews)' : ''}</div>` : ''}
       ${b.phone ? `<div class="result-phone">${escapeHtml(b.phone)}</div>` : ''}
+      ${b.website ? `<div class="result-phone" style="color:#16a34a">${escapeHtml(b.website)}</div>` : ''}
+      ${b.openingHours ? `<div class="result-meta" style="color:#9333ea">${escapeHtml(b.openingHours.slice(0, 80))}</div>` : ''}
     `
     resultsContainer.appendChild(div)
   }

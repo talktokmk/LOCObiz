@@ -29,7 +29,7 @@ export default function AddBusinessPage() {
     fetch('/api/categories')
       .then((r) => r.ok ? r.json() : [])
       .then((data) => { setCategories(data); if (data.length > 0) setCategorySlug(data[0].slug) })
-      .catch(() => {})
+      .catch((e) => console.error('Failed to load categories:', e))
   }, [])
 
   async function handleSubmit(e: FormEvent) {

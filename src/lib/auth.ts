@@ -45,7 +45,7 @@ export async function authenticateAdmin(username: string, password: string): Pro
     args: [username],
   })
   if (rows.rows.length === 0) return null
-  const admin = rows.rows[0] as unknown as { id: number; username: string; password_hash: string }
+    const admin = rows.rows[0] as unknown as { id: number; username: string; password_hash: string }
   const valid = await verifyPassword(password, admin.password_hash)
   if (!valid) return null
   return signToken({ id: admin.id, username: admin.username })

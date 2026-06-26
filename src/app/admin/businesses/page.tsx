@@ -18,6 +18,8 @@ interface Business {
   whatsapp_clicks: number
   phone: string
   status: string
+  is_scraped: number
+  source: string
   meta_title: string | null
   meta_description: string | null
   created_at: string
@@ -62,6 +64,12 @@ export default function AdminBusinessesPage() {
   async function bulkApprove() {
     if (!confirm(`Approve all ${pendingCount} pending businesses?`)) return
     await fetch('/api/admin/businesses', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_all' }) })
+    fetchBusinesses()
+  }
+
+  async function deleteAll() {
+    if (!confirm('DELETE ALL businesses? This cannot be undone. Type "yes" to confirm.') || prompt('Type "yes" to confirm deleting ALL businesses:') !== 'yes') return
+    await fetch('/api/admin/businesses', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_all' }) })
     fetchBusinesses()
   }
 
@@ -136,12 +144,18 @@ export default function AdminBusinessesPage() {
             </button>
           ))}
         </div>
-        {pendingCount > 0 && (
-          <button onClick={bulkApprove}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-            <CheckCircle className="w-4 h-4" /> Bulk Approve All ({pendingCount})
+        <div className="flex items-center gap-2">
+          {pendingCount > 0 && (
+            <button onClick={bulkApprove}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+              <CheckCircle className="w-4 h-4" /> Bulk Approve All ({pendingCount})
+            </button>
+          )}
+          <button onClick={deleteAll}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+            Delete All Data
           </button>
-        )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-surface-200 overflow-hidden">
@@ -155,7 +169,8 @@ export default function AdminBusinessesPage() {
                 <th className="text-left px-4 py-3 font-medium text-surface-600">Category</th>
                 <th className="text-center px-4 py-3 font-medium text-surface-600">Status</th>
                 <th className="text-center px-4 py-3 font-medium text-surface-600">Rating</th>
-                <th className="text-center px-4 py-3 font-medium text-surface-600">WA Clicks</th>
+                  <th className="text-left px-4 py-3 font-medium text-surface-600">Source</th>
+                  <th className="text-center px-4 py-3 font-medium text-surface-600">WA Clicks</th>
                 <th className="text-center px-4 py-3 font-medium text-surface-600">Views</th>
                 <th className="text-center px-4 py-3 font-medium text-surface-600">Featured</th>
                 <th className="text-center px-4 py-3 font-medium text-surface-600">Verified</th>
@@ -198,6 +213,11 @@ export default function AdminBusinessesPage() {
                     <td className="px-4 py-3 text-surface-600">{biz.city}</td>
                     <td className="px-4 py-3 text-surface-600 capitalize">{biz.state?.replace(/-/g, ' ') || '-'}</td>
                     <td className="px-4 py-3 text-surface-600 capitalize">{biz.category_slug}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium ${biz.is_scraped ? 'bg-green-50 text-green-700' : 'bg-surface-100 text-surface-600'}`}>
+                        {biz.source || (biz.is_scraped ? 'scraped' : 'manual')}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {biz.status === 'pending' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">

@@ -85,6 +85,11 @@ export async function initDb() {
   await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_category_slug ON businesses(category_slug)')
   await db.execute('CREATE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug)')
   await db.execute('CREATE INDEX IF NOT EXISTS idx_districts_state_slug ON districts(state_slug)')
+  await db.execute(`CREATE TABLE IF NOT EXISTS subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL,
+    city TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now'))
+  )`)
+
   await db.execute('CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)')
 
   try { await db.execute("ALTER TABLE businesses ADD COLUMN meta_title TEXT") } catch {}
@@ -93,4 +98,13 @@ export async function initDb() {
   try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGER DEFAULT 0") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'approved'") } catch {}
   try { await db.execute("ALTER TABLE businesses ADD COLUMN place_id TEXT") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN is_scraped INTEGER DEFAULT 0") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN source TEXT DEFAULT 'manual'") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN opening_hours TEXT") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id)") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_is_scraped ON businesses(is_scraped)") } catch {}
+  // Backfill: mark existing businesses with place_id as scraped
+  try { await db.execute("UPDATE businesses SET is_scraped = 1, source = 'api' WHERE place_id IS NOT NULL AND place_id != '' AND is_scraped = 0") } catch {}
+  // Approve all pending businesses that have a place_id (scraped data should not stay pending)
+  try { await db.execute("UPDATE businesses SET status = 'approved' WHERE place_id IS NOT NULL AND place_id != '' AND status = 'pending'") } catch {}
 }

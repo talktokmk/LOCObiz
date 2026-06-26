@@ -51,7 +51,7 @@ export default async function SearchPage({
     args.push(category)
   }
 
-  sql += ' ORDER BY featured DESC, whatsapp_clicks DESC, rating DESC, reviews_count DESC'
+  sql += ' ORDER BY featured DESC, created_at DESC LIMIT 100'
 
   const result = await db.execute({ sql, args })
   const businesses = result.rows as unknown as {

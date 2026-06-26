@@ -15,7 +15,7 @@ export default function Header() {
     fetch('/api/categories')
       .then((r) => r.json())
       .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch((e) => console.error('Failed to fetch categories:', e))
   }, [])
 
   useEffect(() => {

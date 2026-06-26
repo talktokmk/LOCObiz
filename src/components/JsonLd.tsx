@@ -1,3 +1,5 @@
+import Script from 'next/script'
+
 interface LocalBusinessData {
   name: string
   description?: string
@@ -31,6 +33,18 @@ interface FAQData {
 interface BreadcrumbData {
   name: string
   item: string
+}
+
+function JsonLd({ data }: { data: Record<string, unknown> }) {
+  return (
+    <Script
+      id={`jsonld-${(data['@type'] as string) || 'schema'}`}
+      type="application/ld+json"
+      strategy="afterInteractive"
+    >
+      {JSON.stringify(data)}
+    </Script>
+  )
 }
 
 export function LocalBusinessJsonLd({ data }: { data: LocalBusinessData }) {
@@ -77,12 +91,7 @@ export function LocalBusinessJsonLd({ data }: { data: LocalBusinessData }) {
     }),
   }
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  )
+  return <JsonLd data={schema} />
 }
 
 export function BreadcrumbJsonLd({ items }: { items: BreadcrumbData[] }) {
@@ -97,12 +106,7 @@ export function BreadcrumbJsonLd({ items }: { items: BreadcrumbData[] }) {
     })),
   }
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  )
+  return <JsonLd data={schema} />
 }
 
 export function FAQJsonLd({ items }: { items: FAQData[] }) {
@@ -119,12 +123,7 @@ export function FAQJsonLd({ items }: { items: FAQData[] }) {
     })),
   }
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  )
+  return <JsonLd data={schema} />
 }
 
 export function WebsiteJsonLd() {
@@ -143,10 +142,5 @@ export function WebsiteJsonLd() {
     },
   }
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  )
+  return <JsonLd data={schema} />
 }

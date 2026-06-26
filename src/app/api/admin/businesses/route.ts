@@ -82,6 +82,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: true, count: result.rowsAffected })
     }
 
+    if (action === 'delete_all') {
+      const result = await db.execute({ sql: 'DELETE FROM businesses' })
+      return NextResponse.json({ success: true, count: result.rowsAffected })
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

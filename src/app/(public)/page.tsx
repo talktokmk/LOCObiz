@@ -4,7 +4,7 @@ import { Metadata } from 'next'
 import SearchBar from '@/components/SearchBar'
 import EmailCapture from '@/components/EmailCapture'
 import { WebsiteJsonLd } from '@/components/JsonLd'
-import { TrendingUp, Zap, MessageCircle, ArrowRight, Building2, Search, Smartphone, CheckCircle, Star, ChevronRight } from 'lucide-react'
+import { TrendingUp, Zap, MessageCircle, ArrowRight, Building2, Search, Smartphone, Star, ChevronRight } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'ADZBE | Find Local Businesses & Connect on WhatsApp',
@@ -29,25 +29,24 @@ export default async function HomePage() {
   let totalWaClicks = 0
 
   try {
-    const trendingRes = await db.execute(
-      "SELECT category_slug, COUNT(*) as count FROM businesses WHERE category_slug IS NOT NULL AND status = 'approved' GROUP BY category_slug ORDER BY count DESC LIMIT 8"
-    )
+    const [trendingRes, topRes, aggRes] = await Promise.all([
+      db.execute(
+        "SELECT category_slug, COUNT(*) as count FROM businesses WHERE category_slug IS NOT NULL AND status = 'approved' GROUP BY category_slug ORDER BY count DESC LIMIT 8"
+      ),
+      db.execute(
+        "SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, verified FROM businesses WHERE status = 'approved' ORDER BY whatsapp_clicks DESC, rating DESC, reviews_count DESC LIMIT 3"
+      ),
+      db.execute(
+        "SELECT COUNT(*) as biz_count, COUNT(DISTINCT city) as city_count, COALESCE(SUM(whatsapp_clicks), 0) as wa_total FROM businesses WHERE status = 'approved'"
+      ),
+    ])
     trending = trendingRes.rows as unknown as typeof trending
-
-    const topRes = await db.execute(
-      "SELECT slug, name, category_slug, city, area, rating, reviews_count, phone, verified FROM businesses WHERE status = 'approved' ORDER BY whatsapp_clicks DESC, rating DESC, reviews_count DESC LIMIT 3"
-    )
     topBusinesses = topRes.rows as unknown as typeof topBusinesses
-
-    const countRes = await db.execute("SELECT COUNT(*) as count FROM businesses WHERE status = 'approved'")
-    totalBiz = (countRes.rows[0] as Record<string, unknown>).count as number || 0
-
-    const cityRes = await db.execute("SELECT COUNT(DISTINCT city) as count FROM businesses WHERE status = 'approved'")
-    totalCities = (cityRes.rows[0] as Record<string, unknown>).count as number || 0
-
-    const clicksRes = await db.execute("SELECT COALESCE(SUM(whatsapp_clicks), 0) as total FROM businesses WHERE status = 'approved'")
-    totalWaClicks = (clicksRes.rows[0] as Record<string, unknown>).total as number || 0
-  } catch {}
+    const agg = aggRes.rows[0] as Record<string, unknown>
+    totalBiz = (agg.biz_count as number) || 0
+    totalCities = (agg.city_count as number) || 0
+    totalWaClicks = (agg.wa_total as number) || 0
+  } catch (e) { console.error('HomePage stats query failed:', e) }
 
   return (
     <>

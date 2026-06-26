@@ -181,8 +181,8 @@ for (const cm of cityMap) {
       const phone = randomPhone()
 
       await db.execute({
-        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO businesses (name, slug, category_id, category_slug, city, district, state, area, address, phone, description, services, rating, reviews_count, verified, views, upvotes, is_scraped, source)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'manual')`,
         args: [
           name, slug, ci + 1, cat.slug, cm.city, cm.district, cm.state, area, `${area}, ${cm.city}`,
           phone,

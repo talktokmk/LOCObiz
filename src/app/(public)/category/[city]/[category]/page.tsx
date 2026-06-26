@@ -28,7 +28,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ city:
   const catName = category.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
   const businessesResult = await db.execute({
-    sql: "SELECT * FROM businesses WHERE LOWER(city) = LOWER(?) AND category_slug = ? AND status = 'approved' ORDER BY featured DESC, whatsapp_clicks DESC, rating DESC, reviews_count DESC",
+    sql: "SELECT * FROM businesses WHERE LOWER(city) = LOWER(?) AND category_slug = ? AND status = 'approved' ORDER BY featured DESC, created_at DESC",
     args: [city, category],
   })
   const businesses = businessesResult.rows as unknown as {
