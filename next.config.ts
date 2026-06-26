@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' },
     ],
   },
+  redirects: async () => [
+    {
+      source: '/owner/:path*',
+      destination: '/:path*',
+      permanent: true,
+    },
+  ],
   headers: async () => [
     {
       source: '/(.*)',
