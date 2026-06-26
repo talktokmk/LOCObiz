@@ -2,20 +2,27 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import BusinessCard from '@/components/BusinessCard'
-import { BreadcrumbJsonLd } from '@/components/JsonLd'
+import { BreadcrumbJsonLd, FAQJsonLd } from '@/components/JsonLd'
 import { RANKING_SQL } from '@/lib/ranking'
-import { MessageCircle, TrendingUp, ArrowRight, ChevronRight, Building2 } from 'lucide-react'
+import { MessageCircle, TrendingUp, ArrowRight, ChevronRight, Building2, HelpCircle } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params
   const cityName = city.charAt(0).toUpperCase() + city.slice(1)
+
+  const catResult = await db.execute({
+    sql: "SELECT DISTINCT category_slug FROM businesses WHERE LOWER(city) = LOWER(?) AND status = 'approved' ORDER BY category_slug LIMIT 6",
+    args: [city],
+  })
+  const cats = (catResult.rows as unknown as { category_slug: string }[]).map(c => c.category_slug.replace(/-/g, ' '))
+
   return {
     title: `Best Services in ${cityName} | Connect on WhatsApp`,
-    description: `Find the best local services in ${cityName}. Top-rated plumbers, electricians, salons, doctors and more — connect instantly on WhatsApp.`,
+    description: `Find the best local services in ${cityName} — ${cats.length ? cats.join(', ') : 'plumbers, electricians, salons, doctors and more'}. Connect instantly on WhatsApp.`,
     alternates: { canonical: `https://adzbe.cloud/city/${city}` },
     openGraph: {
       title: `Best Services in ${cityName} | ADZBE`,
-      description: `Find the best local services in ${cityName}. Connect instantly on WhatsApp.`,
+      description: `Find trusted ${cityName} businesses and connect on WhatsApp.`,
       siteName: 'ADZBE',
       locale: 'en_IN',
     },
@@ -44,6 +51,12 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <BreadcrumbJsonLd items={[
         { name: 'Home', item: 'https://adzbe.cloud/' },
         { name: `${cityName} Services`, item: `https://adzbe.cloud/city/${city}` },
+      ]} />
+      <FAQJsonLd items={[
+        { question: `How do I find a ${categories.length > 0 ? categories[0].replace(/-/g, ' ') : 'service'} in ${cityName}?`, answer: `Search on ADZBE for ${cityName} businesses. Browse ratings, read descriptions, and tap "Chat on WhatsApp" to connect instantly — no forms or phone calls required.` },
+        { question: `Are the businesses in ${cityName} verified?`, answer: `Look for the "Owner Verified" badge on listings. These businesses have claimed their profile and verified their ownership. All listings are manually reviewed before being published.` },
+        { question: `How much does it cost to list my business in ${cityName}?`, answer: `Basic listings are free. Claim your business for ₹499 to get a dashboard, analytics, and the "Owner Verified" badge. Premium placement is ₹499/month.` },
+        { question: `How quickly will a business in ${cityName} respond?`, answer: `Most businesses respond within minutes on WhatsApp. Look for the "Fast Response" badge on listings for businesses that are actively responding.` },
       ]} />
       <div>
       <section className="bg-gradient-to-br from-surface-900 to-surface-800 text-white py-12">
@@ -122,6 +135,29 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               </Link>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="pb-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-xl font-bold text-surface-900 mb-6 flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-whatsapp" /> FAQs About {cityName} Services
+          </h2>
+          <div className="space-y-3">
+            {[
+              { q: `How do I find a ${categories.length > 0 ? categories[0].replace(/-/g, ' ') : 'service'} in ${cityName}?`, a: `Search on ADZBE for ${cityName} businesses. Browse ratings, read descriptions, and tap "Chat on WhatsApp" to connect instantly — no forms or phone calls required.` },
+              { q: `Are the businesses listed in ${cityName} trustworthy?`, a: `All listings are manually reviewed. Look for the "Owner Verified" badge — these businesses have claimed their profile. Check ratings and reviews to make informed decisions.` },
+              { q: `Can I list my ${cityName} business for free?`, a: `Yes! Basic listing is free. Add your business and get discovered by customers looking for your services in ${cityName}.` },
+            ].map((faq, i) => (
+              <details key={i} className="group bg-white rounded-xl border border-surface-200 overflow-hidden">
+                <summary className="px-5 py-4 font-medium text-surface-900 cursor-pointer list-none flex items-center justify-between">
+                  {faq.q}
+                  <ChevronRight className="w-4 h-4 text-surface-400 group-open:rotate-90 transition-transform shrink-0" />
+                </summary>
+                <div className="px-5 pb-4 text-sm text-surface-600">{faq.a}</div>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 

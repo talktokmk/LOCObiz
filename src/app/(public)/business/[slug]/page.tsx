@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import { Star, MapPin, Phone, Globe, Clock, CheckCircle, MessageCircle, ChevronRight, TrendingUp, Shield, Zap, HelpCircle } from 'lucide-react'
+import { Star, MapPin, Phone, Globe, Clock, CheckCircle, MessageCircle, ChevronRight, TrendingUp, Shield, Zap, HelpCircle, Share2, Flag } from 'lucide-react'
 import { LocalBusinessJsonLd, BreadcrumbJsonLd, FAQJsonLd } from '@/components/JsonLd'
 import TrackedWaButton from '@/components/TrackedWaButton'
+import { WaShareButton, ReportButton } from '@/components/BusinessActions'
 import { findWaNumber } from '@/lib/utils'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -158,6 +159,10 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
               </span>
             </div>
 
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <WaShareButton name={biz.name} slug={biz.slug} />
+              <ReportButton businessId={biz.id} />
+            </div>
             <div className="flex items-center gap-4 text-surface-500 flex-wrap text-sm mb-6">
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />

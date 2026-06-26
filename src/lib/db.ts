@@ -135,6 +135,21 @@ export async function initDb() {
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_owner_notifications_owner ON owner_notifications(owner_phone)") } catch {}
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id)") } catch {}
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_is_scraped ON businesses(is_scraped)") } catch {}
+  try { await db.execute("ALTER TABLE businesses ADD COLUMN referral_code TEXT") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_referral_code ON businesses(referral_code)") } catch {}
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL,
+    reporter_name TEXT DEFAULT '',
+    reporter_phone TEXT DEFAULT '',
+    reason TEXT NOT NULL,
+    details TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (business_id) REFERENCES businesses(id)
+  )`)
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)") } catch {}
   // Backfill: mark existing businesses with place_id as scraped
   try { await db.execute("UPDATE businesses SET is_scraped = 1, source = 'api' WHERE place_id IS NOT NULL AND place_id != '' AND is_scraped = 0") } catch {}
   // Approve all pending businesses that have a place_id (scraped data should not stay pending)

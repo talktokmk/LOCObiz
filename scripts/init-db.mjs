@@ -52,8 +52,23 @@ try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGE
 try { await db.execute("ALTER TABLE businesses ADD COLUMN is_scraped INTEGER DEFAULT 0") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN source TEXT DEFAULT 'manual'") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN opening_hours TEXT") } catch {}
+try { await db.execute("ALTER TABLE businesses ADD COLUMN referral_code TEXT") } catch {}
 try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id)") } catch {}
 try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_is_scraped ON businesses(is_scraped)") } catch {}
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_referral_code ON businesses(referral_code)") } catch {}
+
+await db.execute(`CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  business_id INTEGER NOT NULL,
+  reporter_name TEXT DEFAULT '',
+  reporter_phone TEXT DEFAULT '',
+  reason TEXT NOT NULL,
+  details TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (business_id) REFERENCES businesses(id)
+)`)
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)") } catch {}
 
 await db.execute(`CREATE TABLE IF NOT EXISTS leads (
   id INTEGER PRIMARY KEY AUTOINCREMENT, business_id INTEGER NOT NULL,
