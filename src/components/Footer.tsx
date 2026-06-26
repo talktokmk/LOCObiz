@@ -29,6 +29,7 @@ export default async function Footer() {
               <Link href="/blog" className="block hover:text-white transition-colors">Blog</Link>
               <Link href="/premium" className="block hover:text-white transition-colors">Pricing</Link>
               <Link href="/add-business" className="block hover:text-white transition-colors">List Your Business</Link>
+              <Link href="/login" className="block hover:text-white transition-colors">Owner Login</Link>
             </div>
           </div>
           <div>
