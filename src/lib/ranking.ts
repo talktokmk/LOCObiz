@@ -6,7 +6,8 @@ export const RANKING_SQL = `
   (verified * 15) +
   (claimed * 10) +
   MIN(COALESCE(upvotes, 0), 10) +
-  MIN(COALESCE(views, 0) / 50.0, 10)
+  MIN(COALESCE(views, 0) / 50.0, 10) +
+  MIN(COALESCE((SELECT COUNT(*) FROM business_services WHERE business_id = businesses.id), 0) * 3, 15)
 `.trim()
 
 export function computeRankingScore(biz: {
@@ -18,6 +19,7 @@ export function computeRankingScore(biz: {
   claimed?: number | boolean
   upvotes?: number
   views?: number
+  services_count?: number
 }): number {
   let score = 0
   if (biz.featured) score += 50
@@ -28,6 +30,7 @@ export function computeRankingScore(biz: {
   if (biz.claimed) score += 10
   score += Math.min(biz.upvotes ?? 0, 10)
   score += Math.min((biz.views ?? 0) / 50, 10)
+  score += Math.min((biz.services_count ?? 0) * 3, 15)
   return Math.round(score * 10) / 10
 }
 

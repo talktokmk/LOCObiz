@@ -138,6 +138,18 @@ export async function initDb() {
   try { await db.execute("ALTER TABLE businesses ADD COLUMN referral_code TEXT") } catch {}
   try { await db.execute("CREATE INDEX IF NOT EXISTS idx_businesses_referral_code ON businesses(referral_code)") } catch {}
 
+  await db.execute(`CREATE TABLE IF NOT EXISTS business_services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    keywords TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+  )`)
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_business_services_slug ON business_services(slug)") } catch {}
+  try { await db.execute("CREATE INDEX IF NOT EXISTS idx_business_services_business_id ON business_services(business_id)") } catch {}
+
   await db.execute(`CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     business_id INTEGER NOT NULL,

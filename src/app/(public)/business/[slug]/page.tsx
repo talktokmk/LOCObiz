@@ -7,6 +7,14 @@ import TrackedWaButton from '@/components/TrackedWaButton'
 import { WaShareButton, ReportButton } from '@/components/BusinessActions'
 import { findWaNumber } from '@/lib/utils'
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const result = await db.execute("SELECT slug FROM businesses WHERE status = 'approved'")
+  const rows = result.rows as unknown as { slug: string }[]
+  return rows.map(r => ({ slug: r.slug }))
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const result = await db.execute({ sql: "SELECT * FROM businesses WHERE slug = ? AND status = 'approved'", args: [slug] })
@@ -81,6 +89,15 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
   try {
     services = biz.services ? JSON.parse(biz.services) : []
   } catch { services = [] }
+
+  const servicesResult = await db.execute({
+    sql: "SELECT id, name, slug, keywords FROM business_services WHERE business_id = ? ORDER BY name",
+    args: [biz.id],
+  })
+  const businessServices = servicesResult.rows as unknown as { id: number; name: string; slug: string; keywords: string }[]
+
+  const allServiceNames = [...new Set([...services, ...businessServices.map(s => s.name)])]
+
   const waNumber = findWaNumber(biz.whatsapp, biz.phone, biz.address, biz.website)
   const waUrl = `https://wa.me/${waNumber}?text=Hi%2C%20I%20found%20you%20on%20ADZBE.%20I%27m%20interested%20in%20your%20services.`
 
@@ -304,18 +321,37 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
           </div>
         )}
 
-        {services.length > 0 && (
+        {allServiceNames.length > 0 && (
           <div className="bg-white rounded-2xl border border-surface-200 p-6 md:p-8 mb-4 animate-slide-up">
             <h2 className="text-lg font-semibold text-surface-900 mb-3 flex items-center gap-2">
               <Clock className="w-5 h-5 text-whatsapp" /> Services Offered
             </h2>
             <div className="flex flex-wrap gap-2">
-              {services.map((s: string) => (
-                <span key={s} className="px-3 py-1.5 bg-surface-100 text-surface-700 rounded-lg text-sm">
-                  {s}
-                </span>
-              ))}
+              {allServiceNames.map((s: string) => {
+                const svcSlug = s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                return (
+                  <Link
+                    key={s}
+                    href={`/service/${svcSlug}`}
+                    className="px-3 py-1.5 bg-surface-100 text-surface-700 rounded-lg text-sm hover:bg-whatsapp/10 hover:text-whatsapp-dark hover:border-whatsapp/30 transition-colors border border-transparent"
+                  >
+                    {s}
+                  </Link>
+                )
+              })}
             </div>
+            {businessServices.some(s => s.keywords) && (
+              <div className="mt-3 pt-3 border-t border-surface-100">
+                <p className="text-xs text-surface-400 mb-2">Keywords</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {businessServices.map(s => s.keywords?.split(',').filter(Boolean).map(k => k.trim())).flat().filter(Boolean).slice(0, 10).map((kw: string) => (
+                    <span key={kw} className="px-2 py-0.5 bg-brand-50 text-brand-600 rounded text-[11px] capitalize">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

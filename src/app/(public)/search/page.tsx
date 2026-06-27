@@ -41,9 +41,9 @@ export default async function SearchPage({
   const args: (string | number)[] = []
 
   if (query) {
-    sql += ' AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(services) LIKE ?)'
+    sql += ` AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(services) LIKE ? OR EXISTS (SELECT 1 FROM business_services WHERE business_id = businesses.id AND (LOWER(name) LIKE ? OR LOWER(keywords) LIKE ?)))`
     const like = `%${query.toLowerCase()}%`
-    args.push(like, like, like)
+    args.push(like, like, like, like, like)
   }
   if (city) {
     sql += ' AND LOWER(city) LIKE ?'

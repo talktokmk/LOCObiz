@@ -6,6 +6,14 @@ import { BreadcrumbJsonLd, FAQJsonLd } from '@/components/JsonLd'
 import { RANKING_SQL } from '@/lib/ranking'
 import { MessageCircle, TrendingUp, ArrowRight, ChevronRight, Building2, HelpCircle } from 'lucide-react'
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  const result = await db.execute("SELECT DISTINCT LOWER(city) as city FROM businesses WHERE city IS NOT NULL AND status = 'approved'")
+  const rows = result.rows as unknown as { city: string }[]
+  return rows.map(r => ({ city: r.city }))
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params
   const cityName = city.charAt(0).toUpperCase() + city.slice(1)

@@ -74,11 +74,21 @@ export default async function sitemap() {
     priority: 0.6,
   }))
 
+  const serviceResult = await db.execute("SELECT DISTINCT slug, name FROM business_services WHERE slug != ''")
+  const serviceRows = serviceResult.rows as unknown as { slug: string; name: string }[]
+
+  const servicePages = serviceRows.map((s) => ({
+    url: `${baseUrl}/service/${s.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.75,
+  }))
+
   const blogPages = [
     { url: `${baseUrl}/blog/how-to-choose-local-service`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.5 },
     { url: `${baseUrl}/blog/benefits-local-businesses`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.5 },
     { url: `${baseUrl}/blog/digital-marketing-small-business`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.5 },
   ]
 
-  return [...staticPages, ...statePages, ...districtPages, ...cityPages, ...categoryPages, ...categoryCityPages, ...businessPages, ...blogPages]
+  return [...staticPages, ...statePages, ...districtPages, ...cityPages, ...categoryPages, ...categoryCityPages, ...businessPages, ...servicePages, ...blogPages]
 }

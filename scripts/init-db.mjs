@@ -148,6 +148,18 @@ try { await db.execute("ALTER TABLE businesses ADD COLUMN whatsapp_clicks INTEGE
 try { await db.execute("ALTER TABLE businesses ADD COLUMN status TEXT DEFAULT 'approved'") } catch {}
 try { await db.execute("ALTER TABLE businesses ADD COLUMN place_id TEXT") } catch {}
 
+await db.execute(`CREATE TABLE IF NOT EXISTS business_services (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  business_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  keywords TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE
+)`)
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_business_services_slug ON business_services(slug)") } catch {}
+try { await db.execute("CREATE INDEX IF NOT EXISTS idx_business_services_business_id ON business_services(business_id)") } catch {}
+
 // Seed default categories
 try { await db.execute("INSERT OR IGNORE INTO categories (slug, name, description) VALUES ('local-services', 'Local Services', 'Local service providers near you. Connect instantly on WhatsApp.')") } catch {}
 

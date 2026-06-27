@@ -2,7 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, ArrowLeft } from 'lucide-react'
+import { Save, ArrowLeft, Plus, Trash2, ExternalLink, Wrench } from 'lucide-react'
 import Link from 'next/link'
 
 interface Business {
@@ -24,21 +24,40 @@ interface Business {
   image_url: string
 }
 
+interface OwnerService {
+  id: number
+  name: string
+  slug: string
+  keywords: string
+}
+
 export default function EditBusinessPage() {
   const router = useRouter()
   const [biz, setBiz] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [svcs, setSvcs] = useState<OwnerService[]>([])
+  const [newSvc, setNewSvc] = useState('')
+  const [newKw, setNewKw] = useState('')
+  const [editKw, setEditKw] = useState<Record<number, string>>({})
+  const [svcSaving, setSvcSaving] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    fetch('/api/owner/business')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.length > 0) setBiz(data[0])
-        else router.push('/dashboard')
-      })
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch('/api/owner/business').then(r => r.ok ? r.json() : null),
+      fetch('/api/owner/services').then(r => r.ok ? r.json() : []),
+    ]).then(([bizData, svcData]) => {
+      if (bizData?.length > 0) {
+        setBiz(bizData[0])
+        setSvcs(svcData)
+        const init: Record<number, string> = {}
+        for (const s of svcData) init[s.id] = s.keywords || ''
+        setEditKw(init)
+      } else {
+        router.push('/dashboard')
+      }
+    }).finally(() => setLoading(false))
   }, [router])
 
   async function handleSubmit(e: FormEvent) {
@@ -52,17 +71,43 @@ export default function EditBusinessPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(biz),
       })
-      if (res.ok) {
-        setMessage('Saved successfully!')
-      } else {
-        const data = await res.json()
-        throw new Error(data.error || 'Save failed')
-      }
+      if (res.ok) setMessage('Saved successfully!')
+      else { const data = await res.json(); throw new Error(data.error || 'Save failed') }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Save failed')
-    } finally {
-      setSaving(false)
+    } finally { setSaving(false) }
+  }
+
+  async function addService() {
+    if (!newSvc.trim()) return
+    const res = await fetch('/api/owner/services', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newSvc.trim(), keywords: newKw.trim() }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setSvcs(prev => [...prev, { id: data.id, name: newSvc.trim(), slug: '', keywords: newKw.trim() }])
+      setEditKw(prev => ({ ...prev, [data.id]: newKw.trim() }))
+      setNewSvc('')
+      setNewKw('')
     }
+  }
+
+  async function deleteService(id: number) {
+    if (!confirm('Delete this service?')) return
+    await fetch(`/api/owner/services?id=${id}`, { method: 'DELETE' })
+    setSvcs(prev => prev.filter(s => s.id !== id))
+  }
+
+  async function saveKeywords(id: number) {
+    setSvcSaving(prev => new Set(prev).add(id))
+    await fetch('/api/owner/services', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, keywords: editKw[id] || '' }),
+    })
+    setSvcSaving(prev => { const n = new Set(prev); n.delete(id); return n })
   }
 
   if (loading) return <p className="text-surface-500">Loading...</p>
@@ -118,11 +163,11 @@ export default function EditBusinessPage() {
           </div>
         ))}
         <div>
-          <label className="block text-sm font-medium text-surface-700 mb-1">Services (one per line)</label>
+          <label className="block text-sm font-medium text-surface-700 mb-1">Services (legacy, one per line)</label>
           <textarea value={(biz.services || '').replace(/,/g, '\n')}
             onChange={(e) => setBiz({ ...biz, services: e.target.value.split('\n').filter(Boolean).join(',') })}
             className="w-full px-4 py-2.5 rounded-xl border border-surface-200 focus:outline-none focus:ring-2 focus:ring-whatsapp/40 text-sm"
-            rows={4} placeholder="Service 1&#10;Service 2&#10;Service 3" />
+            rows={3} placeholder="Service 1&#10;Service 2&#10;Service 3" />
         </div>
         <div className="flex items-center gap-3 pt-2">
           <button type="submit" disabled={saving}
@@ -134,6 +179,60 @@ export default function EditBusinessPage() {
           </Link>
         </div>
       </form>
+
+      <div className="bg-white rounded-2xl border border-surface-200 p-6 max-w-2xl mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-surface-900 flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-whatsapp" /> SEO Services
+          </h2>
+        </div>
+        <p className="text-xs text-surface-400 mb-4">Add services with ranking keywords. Each service gets its own SEO page at /service/[name].</p>
+
+        <div className="flex items-center gap-2 mb-4">
+          <input type="text" value={newSvc} onChange={(e) => setNewSvc(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-whatsapp/40"
+            placeholder="Service name (e.g. Haircut)" />
+          <input type="text" value={newKw} onChange={(e) => setNewKw(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-surface-200 text-sm focus:outline-none focus:ring-2 focus:ring-whatsapp/40"
+            placeholder="Keywords (comma-separated)" />
+          <button onClick={addService} disabled={!newSvc.trim()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-whatsapp text-white text-sm font-medium rounded-xl hover:bg-whatsapp-dark transition-colors disabled:opacity-50 shrink-0">
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
+
+        {svcs.length === 0 ? (
+          <p className="text-sm text-surface-400 text-center py-6">No SEO services added yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {svcs.map(svc => (
+              <div key={svc.id} className="flex items-center gap-2 p-3 bg-surface-50 rounded-xl">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-surface-900">{svc.name}</span>
+                    <a href={`/service/${svc.slug}`} target="_blank" rel="noopener noreferrer"
+                      className="text-brand-600 hover:text-brand-700">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                  <input type="text" value={editKw[svc.id] || ''}
+                    onChange={(e) => setEditKw({ ...editKw, [svc.id]: e.target.value })}
+                    className="w-full mt-1 px-2 py-1 rounded-lg border border-surface-200 text-xs focus:outline-none focus:ring-1 focus:ring-whatsapp/40"
+                    placeholder="Ranking keywords (comma-separated)" />
+                </div>
+                <button onClick={() => saveKeywords(svc.id)} disabled={svcSaving.has(svc.id)}
+                  className="px-2.5 py-1.5 bg-whatsapp text-white text-xs font-medium rounded-lg hover:bg-whatsapp-dark transition-colors disabled:opacity-50 shrink-0">
+                  {svcSaving.has(svc.id) ? '...' : 'Save'}
+                </button>
+                <button onClick={() => deleteService(svc.id)}
+                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
